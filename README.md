@@ -1,5 +1,3 @@
-# `README.md`
-
 ```markdown
 # dotfiles
 
@@ -21,7 +19,7 @@ dotfiles/
 │       └── broken-config.md         Template for reporting broken configs
 ├── bootstrap/
 │   ├── install.sh                   Symlink installer (run this first)
-│   ├── packages-linux.txt           Reference list of packages (not auto-installed)
+│   ├── packages.txt           Reference list of packages (not auto-installed)
 │   └── symlinks.conf                Source → destination mapping
 ├── cheatsheets/
 │   ├── bash.md                      Bash scripting and interactive use
@@ -36,8 +34,7 @@ dotfiles/
 │   │   ├── .vimrc                   Vim configuration (vanilla, no plugins)
 │   │   └── skeletons/
 │   │       ├── .skeleton.c          C source file template (,c in Vim)
-│   │       ├── .skeleton.h          C header file template (,h in Vim)
-│   │       └── .skeleton.html       HTML5 template (,html in Vim)  ← wait, this is in editors/vim not vim/
+│   │       └── .skeleton.h          C header file template (,h in Vim)
 │   └── vscode/
 │       ├── settings.json            Editor settings
 │       ├── keybindings.json         Custom key bindings
@@ -97,7 +94,7 @@ source ~/.zshrc    # if using Zsh
 ## Installation options
 
 ```sh
-./bootstrap/install.sh              # Normal install
+./bootstrap/install.sh             # Normal install
 ./bootstrap/install.sh --dry-run   # Preview — no changes made
 ./bootstrap/install.sh --force     # Overwrite existing files (backup first)
 ```
@@ -453,7 +450,7 @@ cat ~/.ssh/id_ed25519.pub
 
 ## Packages
 
-`bootstrap/packages-linux.txt` is a reference document, not an install script.
+`bootstrap/packages.txt` is a reference document, not an install script.
 Nothing is installed automatically.
 
 **Minimum required to use this environment:**
@@ -531,5 +528,4 @@ echo $HISTFILE
 # Should output: /home/you/.zsh_history or /home/you/.bash_history
 # Check the file exists and is writable
 ls -la ~/.zsh_history
-```
 ```
