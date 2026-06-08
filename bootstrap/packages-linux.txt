@@ -1,0 +1,140 @@
+# bootstrap/packages.txt
+#
+# Reference list of packages used by this environment.
+#
+# THIS FILE IS DOCUMENTATION ONLY.
+# The install script does NOT read this file or install anything automatically.
+# Nothing in this repository installs packages without your explicit action.
+#
+# HOW TO USE THIS FILE:
+#   Read it. Install what you actually need. Nothing else.
+#
+#   Install a single package (Debian/Ubuntu):
+#     sudo apt install <package>
+#
+#   Install everything in the REQUIRED section at once:
+#     sudo apt install git vim curl wget make gcc valgrind gdb
+#
+#   Check if a package is installed:
+#     dpkg -l <package>
+#     command -v <binary>
+#
+# SECTIONS:
+#   1. Required    — the dotfiles reference these tools directly
+#   2. Development — standard tools for C development and 42 School
+#   3. Optional    — useful but not needed for this config to work
+#
+# ─────────────────────────────────────────────────────────────────
+# 1. REQUIRED
+# ─────────────────────────────────────────────────────────────────
+# The dotfiles in this repository reference these tools.
+# Without them, parts of the configuration will silently have no effect.
+
+git       # Version control. Required by .gitconfig, .gitignore_global, .gitmessage.
+          # Nearly every machine has this. Verify: git --version
+
+vim       # Text editor. Required by .vimrc and referenced as EDITOR in shell files.
+          # On Ubuntu, 'vim' is the full version. 'vi' may be vim.tiny (no plugins).
+          # Install full vim: sudo apt install vim
+          # Install with clipboard support: sudo apt install vim-gtk3
+
+bash      # Bourne Again SHell. Always pre-installed on Linux.
+          # Required for install.sh and .bashrc/.bash_profile.
+
+curl      # HTTP client. Used by .curlrc and referenced in shell functions.
+          # Usually pre-installed. Verify: curl --version
+
+# ─────────────────────────────────────────────────────────────────
+# 2. DEVELOPMENT — C programming and 42 School
+# ─────────────────────────────────────────────────────────────────
+# These are needed for the C development workflow described in the cheatsheets.
+
+gcc       # GNU C Compiler. The 'cc' command on most Linux systems resolves to gcc.
+          # Included in build-essential on Debian/Ubuntu.
+          # Install: sudo apt install build-essential
+
+make      # Build automation. Required for all 42 School projects.
+          # Included in build-essential.
+
+valgrind  # Memory error detector. Referenced in shell aliases (.bash_aliases).
+          # Install: sudo apt install valgrind
+          # Usage: valgrind --leak-check=full ./program
+
+gdb       # GNU Debugger. Referenced in .gdbinit.
+          # Install: sudo apt install gdb
+          # Usage: gdb ./program
+
+python3   # Python 3 interpreter. Required to install norminette.
+          # Usually pre-installed on modern Linux. Verify: python3 --version
+
+python3-pip  # Python package manager. Required to install norminette.
+             # Install: sudo apt install python3-pip
+             # Then: pip3 install norminette
+
+# norminette is installed via pip, not apt:
+#   pip3 install norminette
+#   norminette --version
+
+# ─────────────────────────────────────────────────────────────────
+# 3. OPTIONAL — useful tools
+# ─────────────────────────────────────────────────────────────────
+# These are not required by any dotfile. They are useful tools that
+# complement this development environment. Install only what you use.
+
+# ── PROCESS AND SYSTEM INSPECTION ─────────────────────────────────
+
+htop      # Interactive process viewer. Better than top for real-time monitoring.
+          # Install: sudo apt install htop
+
+strace    # System call tracer. Shows what system calls a program makes.
+          # Useful for debugging programs that fail mysteriously.
+          # Install: sudo apt install strace
+          # Usage: strace ./program
+
+ltrace    # Library call tracer. Shows calls to shared library functions.
+          # Install: sudo apt install ltrace
+
+lsof      # List open files and the processes that have them open.
+          # Useful for finding which process is using a port or file.
+          # Install: sudo apt install lsof
+          # Usage: lsof -i :8080  (show what is using port 8080)
+
+# ── NETWORK ───────────────────────────────────────────────────────
+
+wget      # Alternative HTTP client. Referenced in .wgetrc.
+          # Install: sudo apt install wget
+
+# iproute2 provides: ip, ss
+# Usually pre-installed. Verify: ip --version
+# ss replaces the deprecated netstat for listing open ports.
+
+# ── ARCHIVE TOOLS ─────────────────────────────────────────────────
+
+unzip     # Extract .zip archives.
+          # Install: sudo apt install unzip
+
+# p7zip-full: extract .7z archives.
+# Install: sudo apt install p7zip-full
+
+# ── TEXT AND FILE TOOLS ───────────────────────────────────────────
+
+tree      # Display directory structure as a visual tree.
+          # Install: sudo apt install tree
+          # Usage: tree -L 2  (two levels deep)
+
+jq        # JSON processor. Useful when working with APIs.
+          # Install: sudo apt install jq
+          # Usage: curl -s https://api.example.com | jq '.key'
+
+# ── SHELL SCRIPT ANALYSIS ─────────────────────────────────────────
+
+shellcheck  # Static analysis for shell scripts. Catches common mistakes.
+            # Install: sudo apt install shellcheck
+            # Usage: shellcheck script.sh
+            # Used by: VS Code shell extension for inline warnings
+
+# ── MAN PAGES ─────────────────────────────────────────────────────
+
+man-db    # Man page database. Provides the 'man' command.
+          # Usually pre-installed. Verify: man --version
+          # For C section 2 and 3 man pages: sudo apt install manpages-dev

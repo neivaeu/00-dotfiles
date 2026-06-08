@@ -1,0 +1,191 @@
+[
+    // editors/vscode/keybindings.json
+    //
+    // VS Code custom key bindings.
+    // Symlinked to: ~/.config/Code/User/keybindings.json
+    //
+    // PHILOSOPHY:
+    //   Only add bindings that do not exist by default or that fix
+    //   a conflict with terminal/shell behaviour.
+    //   Do not rebind common defaults (Ctrl+C, Ctrl+V, Ctrl+Z).
+    //   Every binding is commented with why it exists.
+    //
+    // FORMAT:
+    //   {
+    //       "key":     "shortcut",
+    //       "command": "command.id",
+    //       "when":    "context"     ← optional
+    //   }
+    //
+    // The "when" clause restricts the binding to a context.
+    // Without "when", the binding is global (all contexts).
+    //
+    // Common "when" values:
+    //   editorTextFocus   — cursor is inside the text editor
+    //   terminalFocus     — cursor is in the integrated terminal
+    //   !editorReadonly   — file is editable (not read-only)
+    //   editorLangId == 'c' — only in C files
+    //
+    // To find a command ID:
+    //   Ctrl+Shift+P → type the command → right-click → Copy Command ID
+    //
+    // To see all current bindings:
+    //   Ctrl+Shift+P → "Open Keyboard Shortcuts"
+
+    // ─────────────────────────────────────────────────────────────
+    // TERMINAL
+    // ─────────────────────────────────────────────────────────────
+
+    // Clear the terminal screen.
+    // Ctrl+L clears the terminal in bash/zsh. This makes VS Code's
+    // integrated terminal behave the same way.
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.terminal.clear",
+        "when": "terminalFocus"
+    },
+
+    // Open a new terminal instance.
+    {
+        "key": "ctrl+shift+`",
+        "command": "workbench.action.terminal.new"
+    },
+
+    // Disable Ctrl+W closing the editor tab when focus is in the terminal.
+    // Ctrl+W is used in bash/zsh to delete the previous word.
+    // Without this, pressing Ctrl+W in the terminal closes the editor tab.
+    {
+        "key": "ctrl+w",
+        "command": "-workbench.action.closeActiveEditor",
+        "when": "terminalFocus"
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // NAVIGATION
+    // ─────────────────────────────────────────────────────────────
+
+    // Go to the definition of the symbol under the cursor.
+    // F12 is the default — this entry makes it explicit and documented.
+    {
+        "key": "f12",
+        "command": "editor.action.revealDefinition",
+        "when": "editorTextFocus"
+    },
+
+    // Navigate back after jumping to a definition.
+    // Alt+Left: go to the previous cursor location in navigation history.
+    {
+        "key": "alt+left",
+        "command": "workbench.action.navigateBack"
+    },
+
+    // Navigate forward in navigation history.
+    {
+        "key": "alt+right",
+        "command": "workbench.action.navigateForward"
+    },
+
+    // Go to the next error or warning in the current file.
+    {
+        "key": "alt+.",
+        "command": "editor.action.marker.next",
+        "when": "editorFocus"
+    },
+
+    // Go to the previous error or warning.
+    {
+        "key": "alt+,",
+        "command": "editor.action.marker.prev",
+        "when": "editorFocus"
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // EDITING
+    // ─────────────────────────────────────────────────────────────
+
+    // Move the current line (or selection) up.
+    {
+        "key": "alt+up",
+        "command": "editor.action.moveLinesUpAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+
+    // Move the current line (or selection) down.
+    {
+        "key": "alt+down",
+        "command": "editor.action.moveLinesDownAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+
+    // Duplicate the current line downward.
+    {
+        "key": "shift+alt+down",
+        "command": "editor.action.copyLinesDownAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+
+    // Delete the entire current line (does not copy to clipboard).
+    {
+        "key": "ctrl+shift+k",
+        "command": "editor.action.deleteLines",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+
+    // Join the next line to the end of the current line.
+    // No default binding exists for this useful operation.
+    {
+        "key": "ctrl+shift+j",
+        "command": "editor.action.joinLines",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // FILE MANAGEMENT
+    // ─────────────────────────────────────────────────────────────
+
+    // Save all open files at once.
+    // Ctrl+S saves the current file (default). Ctrl+Shift+S saves all.
+    {
+        "key": "ctrl+shift+s",
+        "command": "workbench.action.files.saveAll"
+    },
+
+    // Close the current editor tab.
+    // VS Code default is Ctrl+W but that conflicts with terminal (see above).
+    // This is kept here to make the behaviour explicit.
+    {
+        "key": "ctrl+w",
+        "command": "workbench.action.closeActiveEditor",
+        "when": "!terminalFocus"
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // COMMENTED OUT — available to enable
+    // ─────────────────────────────────────────────────────────────
+
+    // Reveal the current file in the explorer sidebar.
+    // {
+    //     "key": "ctrl+shift+e ctrl+shift+e",
+    //     "command": "workbench.files.action.showActiveFileInExplorer"
+    // },
+
+    // Open the source control (git) panel.
+    // {
+    //     "key": "ctrl+shift+alt+g",
+    //     "command": "workbench.view.scm"
+    // },
+
+    // Toggle Markdown preview to the side.
+    // {
+    //     "key": "ctrl+shift+v",
+    //     "command": "markdown.showPreviewToSide",
+    //     "when": "editorLangId == 'markdown'"
+    // },
+
+    // Focus back to the editor from any panel.
+    // {
+    //     "key": "escape",
+    //     "command": "workbench.action.focusActiveEditorGroup",
+    //     "when": "!editorFocus && !terminalFocus && !inputFocus"
+    // }
+]

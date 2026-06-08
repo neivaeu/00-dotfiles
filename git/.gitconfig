@@ -1,0 +1,570 @@
+# Global Git configuration — applies to all repositories on this machine.
+# Symlinked to ~/.gitconfig by bootstrap/install.sh
+#
+# SENSITIVE DATA:
+#   Never put passwords or tokens here.
+#   This file is tracked in git — it will be public.
+#   Set your identity after installing:
+#     git config --global user.name "Your Name"
+#     git config --global user.email "you@example.com"
+#   Or set it per repository:
+#     git config user.email "work@company.com"
+#
+# OVERRIDE ORDER (highest to lowest priority):
+#   1. Command-line flags
+#   2. Repository .git/config
+#   3. ~/.gitconfig  ← this file
+#   4. /etc/gitconfig
+#
+# DESIGN PRINCIPLE:
+#   Every setting is explained.
+#   Settings that change behaviour in ways that surprise teammates are commented.
+#   The active settings are conservative and widely accepted defaults.
+#
+# SECTIONS:
+#   [user]       — identity
+#   [core]       — core behaviour
+#   [init]       — new repository defaults
+#   [push]       — push behaviour
+#   [pull]       — pull behaviour
+#   [fetch]      — fetch behaviour
+#   [merge]      — merge behaviour
+#   [diff]       — diff algorithm and display
+#   [rebase]     — rebase behaviour
+#   [log]        — log formatting
+#   [status]     — status display
+#   [branch]     — branch sorting
+#   [color]      — colour output
+#   [pager]      — pager for long output
+#   [commit]     — commit behaviour
+#   [rerere]     — conflict resolution memory
+#   [help]       — typo correction
+#   [grep]       — grep defaults
+#   [credential] — authentication
+#   [alias]      — shorthand commands (commented — learn the full commands)
+
+# ─────────────────────────────────────────────────────────────────
+# IDENTITY
+# ─────────────────────────────────────────────────────────────────
+
+[user]
+	# Your name as it appears in commit history.
+	# Set this after installing: git config --global user.name "Your Name"
+	# Leave blank here — set per machine to avoid committing personal data.
+	name =
+
+	# Your email as it appears in commit history.
+	# Set this after installing: git config --global user.email "you@example.com"
+	email =
+
+	# Sign commits with a GPG or SSH key.
+	# Uncomment if you use commit signing.
+	# signingkey = YOUR_KEY_ID
+
+# ─────────────────────────────────────────────────────────────────
+# CORE BEHAVIOUR
+# ─────────────────────────────────────────────────────────────────
+
+[core]
+	# Editor used for commit messages, interactive rebase, and merge messages.
+	# Must be a terminal editor. 'vim' is universally available.
+	# Alternative: nano, emacs, micro
+	editor = vim
+
+	# Pager for long output (git log, git diff, git show).
+	# -F: quit immediately if output fits on one screen (no paging needed)
+	# -R: render ANSI colour codes (required for coloured git output)
+	# -X: do not clear the screen when the pager exits
+	# -S: do not wrap long lines (scroll horizontally instead)
+	pager = less -FRXS
+
+	# Path to the global gitignore file.
+	# Patterns here are ignored in every repository on this machine.
+	# Use it for editor swap files, OS files, and build artefacts.
+	# Project-specific patterns belong in the project's .gitignore.
+	excludesfile = ~/.gitignore_global
+
+	# Line ending normalisation on Linux/macOS.
+	# input: convert CRLF → LF when committing, never convert on checkout.
+	# This prevents Windows-style line endings from entering the repository
+	# when collaborating with Windows users.
+	# Set to 'false' if your project deliberately uses CRLF.
+	autocrlf = input
+
+	# Warn (but do not fail) if a file has mixed line endings.
+	# 'warn': print a warning but allow the commit.
+	# 'true': warn and refuse to commit files with mixed endings.
+	# 'false': do nothing (not recommended if collaborating cross-platform).
+	safecrlf = warn
+
+	# Highlight trailing whitespace and spaces before tabs.
+	# These are almost always mistakes and create noisy diffs.
+	whitespace = trailing-space,space-before-tab
+
+	# Do not use the system's file creation time for change detection.
+	# On some filesystems (NFS, VMs), ctime is unreliable.
+	# Setting to false makes git use mtime instead, which is more reliable.
+	trustctime = false
+
+# ─────────────────────────────────────────────────────────────────
+# NEW REPOSITORIES
+# ─────────────────────────────────────────────────────────────────
+
+[init]
+	# Default branch name when running 'git init'.
+	# 'main' is the modern standard. 'master' is the legacy default.
+	defaultBranch = main
+
+# ─────────────────────────────────────────────────────────────────
+# PUSH
+# ─────────────────────────────────────────────────────────────────
+
+[push]
+	# Which branches to push when no refspec is given.
+	# simple: push the current branch to its upstream counterpart.
+	#         Refuses to push if the names differ.
+	#         This is the safest option — you cannot accidentally push
+	#         all local branches to the remote.
+	# current: push the current branch to a branch of the same name.
+	#          Creates the remote branch if it does not exist.
+	# matching: push ALL branches that have a matching remote branch.
+	#           Dangerous — avoid.
+	default = simple
+
+	# Automatically set the upstream tracking branch when pushing a new branch.
+	# Without this, 'git push' on a new branch says:
+	#   "fatal: The current branch has no upstream branch."
+	# With this, it automatically does: git push -u origin <branch>
+	autoSetupRemote = true
+
+# ─────────────────────────────────────────────────────────────────
+# PULL
+# ─────────────────────────────────────────────────────────────────
+
+[pull]
+	# What to do when 'git pull' would create a divergence.
+	# false:  merge (default — creates a merge commit)
+	# true:   rebase (replays your commits on top of the remote)
+	# 0:      fast-forward only (fail if not possible, safest)
+	#
+	# 'false' (merge) is active because:
+	#   - It is git's default and what most documentation describes
+	#   - It does not rewrite history (safer for shared branches)
+	#   - Rebase is powerful but requires understanding of what it does
+	#
+	# If your team uses rebase-based workflow, change to: rebase = true
+	rebase = false
+
+# ─────────────────────────────────────────────────────────────────
+# FETCH
+# ─────────────────────────────────────────────────────────────────
+
+[fetch]
+	# Automatically remove local remote-tracking branches that no longer
+	# exist on the remote server.
+	# Equivalent to running: git fetch --prune
+	# Without this: deleted remote branches accumulate locally over time.
+	# This is active because it keeps the local branch list clean.
+	prune = true
+
+	# Also remove local tags that no longer exist on the remote.
+	# More aggressive than prune — commented because tags are often kept
+	# intentionally even after the remote deletes them.
+	# pruneTags = true
+
+# ─────────────────────────────────────────────────────────────────
+# MERGE
+# ─────────────────────────────────────────────────────────────────
+
+[merge]
+	# Conflict marker style.
+	# merge (default): shows <<<< ours >>>> theirs
+	# diff3: shows <<<< ours |||| base >>>> theirs
+	#
+	# diff3 is active because showing the common ancestor makes it much
+	# easier to understand what both sides changed and why there is a conflict.
+	conflictstyle = diff3
+
+	# Include a one-line summary of each merged commit in the merge commit message.
+	# Makes the merge commit message more informative.
+	# Uncomment to enable.
+	# log = true
+
+	# Always create a merge commit, even when a fast-forward is possible.
+	# Commented because: fast-forward is cleaner for simple merges.
+	# Uncomment if you want every merge to be visible in the graph.
+	# ff = false
+
+# ─────────────────────────────────────────────────────────────────
+# DIFF
+# ─────────────────────────────────────────────────────────────────
+
+[diff]
+	# Diff algorithm.
+	# myers (default): the standard O(ND) algorithm.
+	# histogram: an improvement on patience that handles moved blocks better.
+	#            Produces more readable diffs when code is restructured.
+	# patience: good for refactored code but slower than histogram.
+	#
+	# histogram is active because it produces significantly more readable
+	# diffs with no performance cost on modern hardware.
+	algorithm = histogram
+
+	# Detect and show file renames instead of showing a delete + add pair.
+	# copies: also detect copies (more expensive but more informative).
+	# true: detect renames only.
+	renames = true
+
+	# Show the function or method name above each diff hunk.
+	# Makes it easier to understand where in the code a change is located.
+	# This is the 'funcname' pattern — language-specific patterns are
+	# configured in .gitattributes.
+	mnemonicprefix = true
+
+	# Highlight lines that were moved within a file differently from lines
+	# that were changed. Makes refactoring commits much easier to review.
+	# default: use a default colour for moved lines
+	# Commented because the output can be noisy on small diffs.
+	# colorMoved = default
+
+# ─────────────────────────────────────────────────────────────────
+# REBASE
+# ─────────────────────────────────────────────────────────────────
+
+[rebase]
+	# Automatically process commits marked with 'fixup!' or 'squash!'.
+	# These are created with: git commit --fixup <sha> or --squash <sha>
+	# During interactive rebase, they are automatically placed after their
+	# target commit and marked as fixup/squash.
+	# Commented because: only useful if you use the fixup workflow.
+	# autosquash = true
+
+	# Automatically stash uncommitted changes before rebase and restore after.
+	# Prevents the "cannot rebase: you have uncommitted changes" error.
+	# Commented because: auto-stashing can hide changes and cause confusion.
+	# autostash = true
+
+# ─────────────────────────────────────────────────────────────────
+# LOG
+# ─────────────────────────────────────────────────────────────────
+
+[log]
+	# Show branch and tag decorations in git log output.
+	# auto: show decorations only when output goes to a terminal.
+	decorate = auto
+
+	# Follow file renames when viewing log for a specific file.
+	# git log -- filename  will show history before the file was renamed.
+	follow = true
+
+	# Date format for git log output.
+	# relative: "3 hours ago", "2 days ago" (default, easy to read)
+	# iso:      "2024-01-15 14:30:00 +0000" (precise, useful for scripts)
+	# short:    "2024-01-15"
+	# Commented because 'relative' is the git default and most readable.
+	# date = relative
+
+	# Abbreviate commit hashes in output (still unique within the repository).
+	# Commented because git already abbreviates intelligently.
+	# abbrevCommit = true
+
+# ─────────────────────────────────────────────────────────────────
+# STATUS
+# ─────────────────────────────────────────────────────────────────
+
+[status]
+	# Show each file inside untracked directories individually.
+	# Default: git shows the directory name only (e.g. 'newdir/')
+	# all: git shows every file inside (e.g. 'newdir/file1.c', 'newdir/file2.c')
+	# This is active because seeing individual files is more informative.
+	# In very large untracked directories this can be slow — comment to revert.
+	showUntrackedFiles = all
+
+# ─────────────────────────────────────────────────────────────────
+# BRANCH
+# ─────────────────────────────────────────────────────────────────
+
+[branch]
+	# Sort branches by most recently committed date (most active branches first).
+	# Default alphabetical sort is less useful with many branches.
+	# -committerdate: descending (most recent first)
+	sort = -committerdate
+
+	# When creating a tracking branch, set it up to track the remote branch.
+	# always: always set up tracking, even for local branches
+	# Commented — the default (true) is already reasonable.
+	# autoSetupMerge = always
+
+# ─────────────────────────────────────────────────────────────────
+# COLOUR OUTPUT
+# ─────────────────────────────────────────────────────────────────
+
+[color]
+	# Enable colour output when the terminal supports it.
+	# auto: colour when output goes to a terminal, plain text when piped.
+	ui = auto
+
+[color "branch"]
+	# The branch you are currently on.
+	current = yellow bold
+	# Other local branches.
+	local = green
+	# Remote-tracking branches.
+	remote = cyan
+
+[color "diff"]
+	# The file names and diff metadata lines.
+	meta = yellow
+	# The @@ hunk header lines.
+	frag = magenta bold
+	# Removed lines.
+	old = red bold
+	# Added lines.
+	new = green bold
+	# Trailing whitespace highlighted as an error.
+	whitespace = red reverse
+
+[color "status"]
+	# Files that have been staged (git add).
+	added = green bold
+	# Files that are modified but not staged.
+	changed = yellow bold
+	# Files that git does not know about.
+	untracked = cyan
+
+# ─────────────────────────────────────────────────────────────────
+# PAGER
+# ─────────────────────────────────────────────────────────────────
+# Override the pager per command.
+# The global pager is set in [core] pager above.
+# These per-command overrides allow different options for different outputs.
+
+[pager]
+	# diff and log benefit from horizontal scrolling (-S) because
+	# diff lines can be very long.
+	diff   = less -FRXS
+	log    = less -FRXS
+	show   = less -FRXS
+
+	# status output is short — no horizontal scroll needed, no line-wrap issue.
+	status = less -FRX
+
+# ─────────────────────────────────────────────────────────────────
+# COMMIT
+# ─────────────────────────────────────────────────────────────────
+
+[commit]
+	# Show a diff of staged changes at the bottom of the commit editor.
+	# Helps you write a more accurate commit message by seeing what you changed.
+	# The diff is shown as comments and does not appear in the final message.
+	verbose = true
+
+	# Load a commit message template when opening the commit editor.
+	# The template file contains instructions and placeholder text.
+	# Configured to use the Conventional Commits format.
+	template = ~/.gitmessage
+
+	# Sign all commits with your GPG key.
+	# Requires gpgsign to be configured and a key to be set in [user].
+	# Commented because commit signing is optional and requires GPG setup.
+	# gpgSign = true
+
+# ─────────────────────────────────────────────────────────────────
+# TAG
+# ─────────────────────────────────────────────────────────────────
+
+[tag]
+	# Sort tags by version number (semantic versioning order).
+	# Without this: v1.2.10 sorts before v1.2.9 (lexicographic order).
+	# With this:    v1.2.10 sorts after  v1.2.9 (numeric order).
+	sort = version:refname
+
+	# Sign tags with GPG.
+	# Commented because tag signing requires GPG setup.
+	# gpgSign = true
+
+# ─────────────────────────────────────────────────────────────────
+# RERERE — Re-use Recorded Resolution
+# ─────────────────────────────────────────────────────────────────
+
+[rerere]
+	# Remember how merge conflicts were resolved and automatically apply
+	# the same resolution when the same conflict appears again.
+	#
+	# Useful when:
+	#   - Rebasing a long-lived branch repeatedly onto main
+	#   - A dependency conflict keeps appearing during merges
+	#
+	# The resolutions are stored in .git/rr-cache/ per repository.
+	# This is active — rerere has no downside when enabled.
+	enabled = true
+
+# ─────────────────────────────────────────────────────────────────
+# HELP
+# ─────────────────────────────────────────────────────────────────
+
+[help]
+	# Automatically run the corrected command after a typo.
+	# 0:  show the suggestion but do not run it (ask first) — safest
+	# N:  auto-run after N*100 milliseconds (e.g. 20 = 2 seconds)
+	# -1: run immediately without waiting
+	#
+	# Commented because auto-running a mistyped command can be dangerous.
+	# Uncomment and set to 20 (2 second delay) if you find typo prompts annoying.
+	# autocorrect = 20
+
+# ─────────────────────────────────────────────────────────────────
+# GREP
+# ─────────────────────────────────────────────────────────────────
+
+[grep]
+	# Show line numbers in git grep output.
+	# Makes it easy to jump to the result in your editor.
+	lineNumber = true
+
+	# Use extended regular expressions by default.
+	# extended: enables +, ?, |, () without backslashes.
+	# Uncomment if you frequently use regex in git grep.
+	# patternType = extended
+
+# ─────────────────────────────────────────────────────────────────
+# CREDENTIAL STORAGE
+# ─────────────────────────────────────────────────────────────────
+
+[credential]
+	# Cache credentials in memory for a limited time.
+	# cache: stores in memory only (cleared on timeout or system restart)
+	# store: stores in plaintext on disk at ~/.git-credentials (less secure)
+	# manager: uses the OS keychain (requires git-credential-manager)
+	#
+	# --timeout=3600: keep cached credentials for 1 hour (3600 seconds)
+	# Adjust the timeout based on your security requirements.
+	#
+	# Commented because the right choice depends on the machine:
+	#   - Personal machine: store or manager is more convenient
+	#   - Shared machine:   cache with short timeout is safer
+	#   - Using SSH keys:   credentials are not needed at all (preferred)
+	# helper = cache --timeout=3600
+
+# ─────────────────────────────────────────────────────────────────
+# URL REWRITES
+# ─────────────────────────────────────────────────────────────────
+
+# Rewrite HTTPS GitHub URLs to SSH automatically.
+# With this: 'git clone https://github.com/user/repo' uses SSH instead.
+# Useful if you always use SSH and want to avoid typing git@github.com.
+# Commented because: not everyone uses SSH. HTTPS is the safer default.
+# [url "git@github.com:"]
+# 	insteadOf = https://github.com/
+
+# ─────────────────────────────────────────────────────────────────
+# GIT LFS — Large File Storage
+# ─────────────────────────────────────────────────────────────────
+
+# These are set automatically by running: git lfs install
+# Do not set them manually unless you know what you are doing.
+# Commented because LFS is optional and requires installation.
+# [filter "lfs"]
+# 	clean    = git-lfs clean -- %f
+# 	smudge   = git-lfs smudge -- %f
+# 	process  = git-lfs filter-process
+# 	required = true
+
+# ─────────────────────────────────────────────────────────────────
+# ALIASES
+# ─────────────────────────────────────────────────────────────────
+# All aliases are commented out.
+# Reasoning: full git commands work everywhere, in any shell, on any machine,
+# in documentation, and in scripts. Aliases only work after your dotfiles
+# are installed. Learning the full commands is more durable.
+#
+# Each alias below is documented so teammates can enable what they want.
+
+[alias]
+	# ── STATUS ────────────────────────────────────────────────────
+
+	# Compact status with branch and tracking info.
+	# --short: compact format  --branch: include branch info
+	# st = status --short --branch
+
+	# ── STAGING ───────────────────────────────────────────────────
+
+	# Interactively stage hunks — the most precise way to stage changes.
+	# Lets you stage part of a file rather than the whole thing.
+	# ap = add --patch
+
+	# ── COMMIT ────────────────────────────────────────────────────
+
+	# Commit with inline message (skips the editor).
+	# cm = commit --message
+
+	# Amend the last commit (opens editor for message).
+	# ca = commit --amend
+
+	# Amend the last commit without changing the message.
+	# Useful when you forgot to include a file in the last commit.
+	# cane = commit --amend --no-edit
+
+	# ── LOG ───────────────────────────────────────────────────────
+
+	# Compact graph log showing all branches and tags.
+	# This is the most useful way to visualise repository history.
+	# --oneline: one line per commit
+	# --graph:   ASCII branch graph
+	# --decorate: show branch/tag labels
+	# --all:     show all refs, not just current branch
+	# lg = log --oneline --graph --decorate --all
+
+	# Log with file statistics (lines added/removed per file).
+	# ll = log --stat --abbrev-commit
+
+	# Show only the most recent commit with file statistics.
+	# last = log -1 HEAD --stat
+
+	# ── DIFF ──────────────────────────────────────────────────────
+
+	# Diff of staged changes (what would be committed right now).
+	# Equivalent to: git diff --cached
+	# ds = diff --staged
+
+	# Diff ignoring all whitespace changes.
+	# Useful when a file was reformatted without logic changes.
+	# dw = diff --ignore-all-space
+
+	# ── PUSH ──────────────────────────────────────────────────────
+
+	# Safer force push — fails if the remote has received new commits
+	# since your last fetch. Prevents overwriting others' work.
+	# pf = push --force-with-lease
+
+	# ── STASH ─────────────────────────────────────────────────────
+
+	# List all stashes.
+	# sl = stash list
+
+	# Pop the most recent stash.
+	# sp = stash pop
+
+	# ── BRANCH ────────────────────────────────────────────────────
+
+	# Show all branches (local and remote).
+	# ba = branch --all
+
+	# ── INSPECTION ────────────────────────────────────────────────
+
+	# Show the absolute path of the repository root directory.
+	# Useful in scripts to find the project root from any subdirectory.
+	# root = rev-parse --show-toplevel
+
+	# List all configured aliases (this section).
+	# aliases = config --get-regexp alias
+
+	# Show each contributor's commit count, sorted highest first.
+	# contributors = shortlog --summary --numbered --email
+
+	# ── CLEANUP ───────────────────────────────────────────────────
+
+	# Delete all local branches that have been merged into main/master.
+	# Safe: never deletes the current branch or main/master/develop.
+	# Useful after a long period of feature branch development.
+	# cleanup = "!git branch --merged | grep -vE '(\\*|main|master|develop)' | xargs -r git branch --delete"

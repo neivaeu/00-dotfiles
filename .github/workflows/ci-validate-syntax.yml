@@ -1,0 +1,453 @@
+# Continuous integration pipeline for the dotfiles repository.
+#
+# PURPOSE:
+#   Catch mistakes before they reach the main branch.
+#   This is not a deployment pipeline — it does not install anything
+#   on your machine. It runs checks in a clean Ubuntu environment on
+#   GitHub's servers every time you push or open a pull request.
+#
+# WHAT IT CHECKS:
+#   1. Shell script syntax     — bash -n and shellcheck on all .sh files
+#   2. Zsh file syntax         — zsh -n on all .zsh files
+#   3. symlinks.conf integrity — every declared source file actually exists
+#   4. Required files          — the files that must always be present
+#   5. Git config syntax       — git config --list can parse .gitconfig
+#   6. install.sh dry run      — the bootstrap script runs without errors
+#
+# WHAT IT DOES NOT CHECK:
+#   - Whether tools like vim, valgrind, norminette are installed (not our job)
+#   - Whether the dotfiles produce the exact shell behaviour you expect
+#   - macOS compatibility (this repository targets Linux)
+#
+# TRIGGER:
+#   Runs on every push to any branch and every pull request.
+#   Using "**" matches all branch names including feature branches.
+#
+# READING THE OUTPUT:
+#   Go to the Actions tab on GitHub.
+#   Click the failing workflow run.
+#   Expand the failing job to see the exact error and line number.
+#
+# JOBS:
+#   shell-syntax       — bash -n + shellcheck on *.sh files
+#   zsh-syntax         — zsh -n on *.zsh files
+#   symlinks-conf      — every source in symlinks.conf exists in the repo
+#   required-files     — specific files that must always be present
+#   gitconfig-syntax   — .gitconfig is parseable by git
+#   bootstrap-dry-run  — install.sh --dry-run completes without error
+
+name: Validate Dotfiles
+
+# ─────────────────────────────────────────────────────────────────
+# TRIGGERS
+# ─────────────────────────────────────────────────────────────────
+
+on:
+  # Run on every push to every branch.
+  # "**" is a glob that matches any branch name.
+  push:
+    branches: ["**"]
+
+  # Run on every pull request targeting any branch.
+  pull_request:
+    branches: ["**"]
+
+# ─────────────────────────────────────────────────────────────────
+# JOBS
+# ─────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 1: Bash shell script syntax
+  # ───────────────────────────────────────────────────────────────
+  #
+  # Two levels of checking:
+  #   bash -n:    fast syntax check built into bash itself.
+  #               Catches syntax errors with zero external dependencies.
+  #               Does not execute the script.
+  #
+  #   shellcheck: static analysis tool. Catches:
+  #               - quoting mistakes that cause word splitting bugs
+  #               - use of deprecated constructs
+  #               - unreachable code
+  #               - common mistakes like [ $var ] instead of [ "$var" ]
+  #               Severity 'warning' and above are reported (not 'style').
+
+  shell-syntax:
+    name: Bash — syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository contents into the runner's workspace.
+      # actions/checkout@v4 is the standard GitHub action for this.
+      # Without this step, no repository files are available.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install shellcheck from the Ubuntu package manager.
+      # shellcheck is not pre-installed on ubuntu-latest runners.
+      # -y: non-interactive (no confirmation prompt)
+      # -qq: quiet (suppress progress output, show only errors)
+      - name: Install shellcheck
+        run: sudo apt-get install -y -qq shellcheck
+
+      # bash -n: parse the script without executing it.
+      # If there is a syntax error, bash exits with code 1 and the step fails.
+      # find: search recursively for files named *.sh
+      # -not -path "./.git/*": skip the .git directory
+      # -print0 + xargs -0: handle filenames with spaces safely
+      #   (unlikely in a dotfiles repo but correct practice)
+      - name: Check bash syntax with bash -n
+        run: |
+          echo "Checking bash syntax..."
+          find . -name "*.sh" \
+               -not -path "./.git/*" \
+               -print0 \
+            | xargs -0 -I{} bash -n {} \
+            && echo "All .sh files passed bash -n"
+
+      # shellcheck: static analysis on all shell scripts.
+      # --severity=warning: report warnings and errors, skip style/info hints.
+      #   'error':   will definitely break or behave incorrectly
+      #   'warning': likely to cause incorrect behaviour
+      #   'info':    suggestions (skipped — too noisy for CI)
+      #   'style':   style suggestions (skipped)
+      # --shell=bash: treat all files as bash (overrides shebang detection
+      #   for files that might be detected as sh).
+      # If no .sh files are found, xargs exits 0 and the step passes.
+      - name: Run shellcheck on all .sh files
+        run: |
+          echo "Running shellcheck..."
+          find . -name "*.sh" \
+               -not -path "./.git/*" \
+               -print0 \
+            | xargs -0 shellcheck \
+                --severity=warning \
+                --shell=bash \
+            && echo "All .sh files passed shellcheck"
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 2: Zsh file syntax
+  # ───────────────────────────────────────────────────────────────
+  #
+  # zsh -n: parse zsh files without executing them.
+  # This catches syntax errors in:
+  #   - .zshrc
+  #   - .zshenv
+  #   - aliases.zsh
+  #   - functions.zsh
+  #   - custom.zsh-theme
+  #
+  # NOTE: zsh -n does NOT catch runtime errors, only parse errors.
+  # It will not tell you if a variable is unset or a command is missing.
+
+  zsh-syntax:
+    name: Zsh — syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install zsh. Not pre-installed on ubuntu-latest.
+      - name: Install zsh
+        run: sudo apt-get install -y -qq zsh
+
+      # zsh -n: parse without executing, like bash -n.
+      # We check specific known zsh files rather than using find *.zsh
+      # because the shell/ directory contains files that should be checked.
+      # The -f check prevents failure if a file does not exist yet —
+      # this makes the CI resilient to partial setups.
+      - name: Check zsh file syntax with zsh -n
+        run: |
+          echo "Checking zsh syntax..."
+          errors=0
+
+          # List of all zsh configuration files in this repository.
+          # Add new .zsh files here when they are created.
+          zsh_files=(
+            "shell/.zshrc"
+            "shell/.zshenv"
+            "shell/aliases.zsh"
+            "shell/functions.zsh"
+            "shell/custom.zsh-theme"
+          )
+
+          for f in "${zsh_files[@]}"; do
+            if [ -f "$f" ]; then
+              # zsh -n: -n flag = parse only, do not execute
+              if zsh -n "$f" 2>&1; then
+                echo "  OK: $f"
+              else
+                echo "  FAIL: $f"
+                errors=$((errors + 1))
+              fi
+            else
+              # File not found is a warning, not an error.
+              # The required-files job catches truly missing files.
+              echo "  SKIP (not found): $f"
+            fi
+          done
+
+          if [ "$errors" -gt 0 ]; then
+            echo ""
+            echo "FAILED: $errors zsh file(s) have syntax errors."
+            exit 1
+          fi
+
+          echo "All zsh files passed zsh -n"
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 3: symlinks.conf integrity
+  # ───────────────────────────────────────────────────────────────
+  #
+  # Every source path declared in symlinks.conf must exist in the repository.
+  # This prevents the install script from silently skipping a missing file.
+  #
+  # Format of symlinks.conf:
+  #   source/path → ~/destination/path
+  #   (separator is a UTF-8 right arrow: →)
+  #
+  # This job:
+  #   - Reads each non-comment, non-blank line
+  #   - Extracts the source path (left of →)
+  #   - Checks that the file or directory exists
+
+  symlinks-conf:
+    name: symlinks.conf — all sources exist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate every source in symlinks.conf exists
+        run: |
+          conf="bootstrap/symlinks.conf"
+
+          # Fail immediately if the config file itself is missing.
+          if [ ! -f "$conf" ]; then
+            echo "ERROR: $conf not found."
+            exit 1
+          fi
+
+          echo "Reading: $conf"
+          echo ""
+
+          errors=0
+
+          # Read every line of the config file.
+          # IFS=: do not split on whitespace (we split manually on →)
+          # read -r: raw mode, do not interpret backslashes
+          # || [ -n "$line" ]: process the last line even if it has no newline
+          while IFS= read -r line || [ -n "$line" ]; do
+
+            # Skip blank lines.
+            [ -z "$line" ] && continue
+
+            # Skip comment lines (starting with #).
+            case "$line" in
+              \#*) continue ;;
+            esac
+
+            # Extract the source path: everything before the → arrow.
+            # ${line%%→*}: remove from the first → to the end of the string.
+            # xargs: trim leading and trailing whitespace.
+            src="$(printf '%s' "${line%%→*}" | xargs)"
+
+            # Skip if parsing produced an empty string (malformed line).
+            if [ -z "$src" ]; then
+              echo "  WARN: Could not parse line: $line"
+              continue
+            fi
+
+            # Check that the source file or directory exists.
+            # -f: regular file  -d: directory
+            if [ -f "$src" ] || [ -d "$src" ]; then
+              echo "  OK:      $src"
+            else
+              echo "  MISSING: $src"
+              errors=$((errors + 1))
+            fi
+
+          done < "$conf"
+
+          echo ""
+
+          if [ "$errors" -gt 0 ]; then
+            echo "FAILED: $errors source(s) declared in symlinks.conf do not exist."
+            echo "Add the missing files or remove the entries from symlinks.conf."
+            exit 1
+          fi
+
+          echo "All sources in symlinks.conf exist."
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 4: Required files
+  # ───────────────────────────────────────────────────────────────
+  #
+  # A minimal set of files must always exist in the repository.
+  # This job fails if any of them are accidentally deleted or renamed.
+  #
+  # This is a safeguard against incomplete commits where someone
+  # adds a symlinks.conf entry but forgets to commit the actual file.
+
+  required-files:
+    name: Required files — all present
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check all required files exist
+        run: |
+          echo "Checking required files..."
+          echo ""
+
+          # Files that must exist for the dotfiles to be functional.
+          # Add to this list when a new required file is introduced.
+          required=(
+            # Bootstrap
+            "bootstrap/install.sh"
+            "bootstrap/symlinks.conf"
+            "bootstrap/packages.txt"
+
+            # Shell — bash
+            "shell/.bashrc"
+            "shell/.bash_profile"
+            "shell/.bash_aliases"
+            "shell/.inputrc"
+
+            # Shell — zsh
+            "shell/.zshrc"
+            "shell/.zshenv"
+            "shell/aliases.zsh"
+            "shell/functions.zsh"
+            "shell/custom.zsh-theme"
+
+            # Git
+            "git/.gitconfig"
+            "git/.gitignore_global"
+            "git/.gitmessage"
+
+            # System
+            "system/.curlrc"
+            "system/.wgetrc"
+            "system/.editorconfig"
+          )
+
+          errors=0
+
+          for f in "${required[@]}"; do
+            if [ -f "$f" ]; then
+              echo "  OK:      $f"
+            else
+              echo "  MISSING: $f"
+              errors=$((errors + 1))
+            fi
+          done
+
+          echo ""
+
+          if [ "$errors" -gt 0 ]; then
+            echo "FAILED: $errors required file(s) are missing from the repository."
+            exit 1
+          fi
+
+          echo "All required files are present."
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 5: Git config syntax
+  # ───────────────────────────────────────────────────────────────
+  #
+  # Verify that git/.gitconfig is valid INI syntax that git can parse.
+  #
+  # Method:
+  #   git config --file <path> --list
+  #   This reads the file as a git config and lists all keys.
+  #   If the file has a syntax error, git exits with code 128 and
+  #   prints a clear error message.
+  #
+  # This catches: missing = signs, duplicate sections with wrong syntax,
+  # invalid section headers, unterminated strings.
+
+  gitconfig-syntax:
+    name: .gitconfig — syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # git is always available on ubuntu-latest runners.
+      # No installation needed.
+      - name: Validate .gitconfig is parseable by git
+        run: |
+          echo "Checking git/.gitconfig syntax..."
+
+          if [ ! -f "git/.gitconfig" ]; then
+            echo "ERROR: git/.gitconfig not found."
+            exit 1
+          fi
+
+          # git config --file: use a specific file instead of ~/.gitconfig
+          # --list: print all key=value pairs
+          # If parsing fails, git exits non-zero and the step fails.
+          # We redirect output to /dev/null — we only care about the exit code.
+          if git config --file git/.gitconfig --list > /dev/null 2>&1; then
+            echo "git/.gitconfig syntax is valid."
+          else
+            echo "ERROR: git/.gitconfig has a syntax error."
+            # Run again without redirect so the error message is visible in CI.
+            git config --file git/.gitconfig --list
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────────────────────────
+  # JOB 6: Bootstrap dry run
+  # ───────────────────────────────────────────────────────────────
+  #
+  # Run the install script in --dry-run mode to verify it:
+  #   - Parses correctly (bash -n already catches syntax errors,
+  #     but this confirms runtime behaviour)
+  #   - Reads symlinks.conf without crashing
+  #   - Exits with code 0 (no errors reported)
+  #
+  # Dry run mode prints what it WOULD do without creating any symlinks.
+  # This is safe to run in CI because it does not modify the system.
+  #
+  # This job depends on shell-syntax and symlinks-conf passing first.
+  # 'needs' prevents running this job if the prerequisite jobs fail,
+  # which avoids confusing cascading failures.
+
+  bootstrap-dry-run:
+    name: install.sh — dry run
+    runs-on: ubuntu-latest
+
+    # Only run this job if the syntax and config checks pass first.
+    # If shellcheck finds an error, we do not need to also run the script.
+    needs:
+      - shell-syntax
+      - symlinks-conf
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Make the install script executable.
+      # Git does not always preserve execute permissions across platforms.
+      # chmod +x: add execute permission for the owner.
+      - name: Make install.sh executable
+        run: chmod +x bootstrap/install.sh
+
+      # Run the install script in dry-run mode.
+      # --dry-run: print what would be done without creating any symlinks.
+      # The script exits with code 1 if any source file is missing,
+      # which would also fail this step.
+      - name: Run install.sh --dry-run
+        run: |
+          echo "Running bootstrap/install.sh --dry-run..."
+          echo ""
+          ./bootstrap/install.sh --dry-run

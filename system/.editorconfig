@@ -1,0 +1,217 @@
+# Universal editor configuration.
+# When you open any file, your editor reads this and applies the
+# formatting rules automatically — no manual configuration needed.
+#
+# SUPPORTED EDITORS (natively or with a plugin):
+#   Vim          — needs the editorconfig-vim plugin
+#                  (or native support in Vim 9+ with 'editorconfig' feature compiled in)
+#   Neovim       — built-in support since 0.9
+#   VS Code      — needs the EditorConfig extension (EditorConfig.EditorConfig)
+#   JetBrains    — built-in support (IntelliJ, CLion, PyCharm, etc.)
+#   Emacs        — needs the editorconfig-emacs package
+#   Sublime Text — needs the EditorConfig package
+#   Atom         — built-in support
+#   GitHub       — shown in file view
+#
+# PLUGIN INSTALLATION:
+#   Vim:    in your .vimrc add 'Plug editorconfig/editorconfig-vim'
+#           or:          'packadd editorconfig'  (Vim 9+, no plugin needed)
+#   VSCode: Ctrl+P → ext install EditorConfig.EditorConfig
+#
+# DOCUMENTATION: https://editorconfig.org/
+#
+# HOW PRECEDENCE WORKS:
+#   When a file is opened, the editor searches for .editorconfig
+#   starting from the file's directory upward.
+#   The closest file's settings win.
+#   'root = true' stops the upward search — without it, the editor
+#   would continue looking in parent directories.
+#
+# FORMAT:
+#   [glob]     — file pattern using .gitignore-style glob syntax
+#   key = value — setting to apply
+
+# Stop searching parent directories for more .editorconfig files.
+# This file is the root configuration.
+root = true
+
+# ─────────────────────────────────────────────────────────────────
+# ALL FILES — baseline defaults
+# ─────────────────────────────────────────────────────────────────
+
+[*]
+
+# Character encoding: UTF-8.
+# Ensures special characters (accented letters, symbols) are
+# stored and read correctly on all platforms and editors.
+charset = utf-8
+
+# Line endings: LF (Unix \n), not CRLF (Windows \r\n).
+# LF is the standard on Linux and macOS.
+# Git should also be configured to normalise line endings:
+#   git config --global core.autocrlf input  (macOS/Linux)
+end_of_line = lf
+
+# Remove trailing spaces at the end of each line on save.
+# Trailing whitespace causes noisy diffs and is almost never intentional.
+# Exception: Markdown (overridden below — two trailing spaces = line break).
+trim_trailing_whitespace = true
+
+# Ensure every file ends with a single newline character.
+# Required by POSIX — text files must end with a newline.
+# Without this, some tools (cat, diff, wc -l) behave incorrectly.
+insert_final_newline = true
+
+# Default indentation: 4 spaces.
+# Overridden for specific file types below.
+indent_style = space
+indent_size = 4
+
+# Maximum line length: 80 characters.
+# This is informational for most editors (shows a ruler or warning).
+# Not enforced automatically — your linter or compiler enforces it.
+max_line_length = 80
+
+# ─────────────────────────────────────────────────────────────────
+# C SOURCE FILES
+# ─────────────────────────────────────────────────────────────────
+
+[*.{c,h}]
+
+# The 42 School norminette requires HARD TABS for indentation.
+# Using spaces in a .c or .h file is a norminette violation.
+# tab_width: controls how wide a tab appears in the editor.
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+# 42 Norm: maximum 80 characters per line.
+max_line_length = 80
+
+# ─────────────────────────────────────────────────────────────────
+# MAKEFILES
+# ─────────────────────────────────────────────────────────────────
+
+[Makefile]
+
+# Make REQUIRES hard tabs for recipe lines.
+# Using spaces instead of tabs causes:
+#   Makefile:5: *** missing separator.  Stop.
+# This is not optional — spaces will break the build.
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+# All .mk files (included Makefiles) have the same requirement.
+[*.mk]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+# ─────────────────────────────────────────────────────────────────
+# SHELL SCRIPTS
+# ─────────────────────────────────────────────────────────────────
+
+[*.{sh,bash,zsh}]
+
+# Shell scripts use spaces (4) for consistency with other config files.
+# There is no technical requirement for tabs in shell scripts.
+indent_style = space
+indent_size = 4
+max_line_length = 80
+
+# ─────────────────────────────────────────────────────────────────
+# MARKDOWN
+# ─────────────────────────────────────────────────────────────────
+
+[*.md]
+
+# IMPORTANT: Do NOT trim trailing whitespace in Markdown files.
+# Two trailing spaces at the end of a line is the Markdown syntax
+# for a hard line break (<br>). Trimming them changes the document's meaning.
+trim_trailing_whitespace = false
+
+indent_style = space
+indent_size = 2
+
+# ─────────────────────────────────────────────────────────────────
+# YAML
+# ─────────────────────────────────────────────────────────────────
+
+[*.{yml,yaml}]
+
+# YAML: 2-space indentation is the overwhelming convention.
+# Some YAML parsers are strict about consistency — always use 2 spaces.
+indent_style = space
+indent_size = 2
+
+# ─────────────────────────────────────────────────────────────────
+# JSON
+# ─────────────────────────────────────────────────────────────────
+
+[*.json]
+
+# JSON: 2-space indentation is the most common convention (used by
+# Node.js, npm, Prettier, and most formatters by default).
+# Some projects use 4 — adjust if your project requires it.
+indent_style = space
+indent_size = 2
+
+# ─────────────────────────────────────────────────────────────────
+# PYTHON
+# ─────────────────────────────────────────────────────────────────
+
+# [*.py]
+# PEP 8: 4 spaces. This matches the global [*] default, so no override needed.
+# Uncomment only if you want to change something specific for Python.
+# indent_style = space
+# indent_size = 4
+# max_line_length = 88   # Uncomment if you use the Black formatter (its default is 88)
+# max_line_length = 79   # Uncomment if you follow strict PEP 8
+
+# ─────────────────────────────────────────────────────────────────
+# TOML
+# ─────────────────────────────────────────────────────────────────
+
+# [*.toml]
+# TOML files (Cargo.toml, pyproject.toml, starship.toml, etc.)
+# do not have an official indentation standard.
+# The global [*] default of 4 spaces is fine.
+# Uncomment to override:
+# indent_style = space
+# indent_size = 2
+
+# ─────────────────────────────────────────────────────────────────
+# JAVASCRIPT / TYPESCRIPT (commented — uncomment if you use these)
+# ─────────────────────────────────────────────────────────────────
+
+# [*.{js,jsx,ts,tsx}]
+# Standard in JS/TS ecosystem is 2 spaces (Prettier, ESLint default).
+# 42 School does not use JavaScript, so this is commented out.
+# Uncomment if you work on web projects.
+# indent_style = space
+# indent_size = 2
+# max_line_length = 100
+
+# ─────────────────────────────────────────────────────────────────
+# HTML / CSS (commented — uncomment if you use these)
+# ─────────────────────────────────────────────────────────────────
+
+# [*.{html,htm}]
+# indent_style = space
+# indent_size = 2
+
+# [*.css]
+# indent_style = space
+# indent_size = 2
+
+# ─────────────────────────────────────────────────────────────────
+# BINARY FILES
+# ─────────────────────────────────────────────────────────────────
+
+# [*.{png,jpg,jpeg,gif,ico,pdf,zip,tar,gz,bz2,xz,7z,exe,bin}]
+# Binary files must not have trailing whitespace trimmed or newlines added.
+# 'unset' tells the editor to ignore the global setting for this file type.
+# Uncomment if your editor is modifying binary files (rare but possible).
+# trim_trailing_whitespace = unset
+# insert_final_newline = unset

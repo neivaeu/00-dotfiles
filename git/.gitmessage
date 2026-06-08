@@ -1,0 +1,164 @@
+# Commit message template — shown in your editor when you run: git commit
+# Configured in ~/.gitconfig: [commit] template = ~/.gitmessage
+#
+# Lines starting with # are comments and will NOT appear in the final message.
+# The blank line below the subject line is REQUIRED — git uses it to separate
+# the subject from the body.
+#
+# HOW TO USE:
+#   1. Replace the first line with your actual subject line
+#   2. Delete the first line if you have nothing to write yet
+#   3. Leave a blank line after the subject
+#   4. Write the body if the change needs explanation
+#   5. Save and close the editor — git creates the commit
+#
+# To skip the template for a quick commit:
+#   git commit -m "fix(parser): handle null input"
+#
+# To edit the last commit message:
+#   git commit --amend
+
+
+# ─────────────────────────────────────────────────────────────────
+# SUBJECT LINE — required, 72 characters maximum
+# Format: type(scope): short description
+# ─────────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────────
+# BODY — optional, wrap at 72 characters
+# Explain WHAT changed and WHY. The diff shows HOW.
+# Leave a blank line between the subject and the body.
+# ─────────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────────
+# FOOTER — optional
+# Closes #123       (closes a GitHub/GitLab issue)
+# BREAKING CHANGE: description of what breaks and how to migrate
+# Co-authored-by: Name <email@example.com>
+# ─────────────────────────────────────────────────────────────────
+
+
+# ═════════════════════════════════════════════════════════════════
+# CONVENTIONAL COMMITS — REFERENCE
+# https://www.conventionalcommits.org/
+# ═════════════════════════════════════════════════════════════════
+#
+# FORMAT:
+#   type(scope): short description
+#   │     │      │
+#   │     │      └── Imperative mood. No capital. No period. Max 72 chars.
+#   │     └───────── Optional. The part of the codebase affected.
+#   └─────────────── Required. See types below.
+#
+# ─────────────────────────────────────────────────────────────────
+# TYPES:
+#
+#   feat      — A new feature or capability
+#               Example: feat(lexer): add support for string literals
+#
+#   fix       — A bug fix
+#               Example: fix(alloc): free buffer on early return
+#
+#   docs      — Documentation changes only (comments, README, cheatsheets)
+#               Example: docs(readme): add build instructions
+#
+#   style     — Formatting, whitespace, missing semicolons (no logic change)
+#               Example: style(parser): remove trailing whitespace
+#
+#   refactor  — Code restructuring — no bug fixed, no feature added
+#               Example: refactor(lexer): extract tokenise_string function
+#
+#   perf      — Performance improvement
+#               Example: perf(sort): replace bubble sort with quicksort
+#
+#   test      — Adding or fixing tests
+#               Example: test(stack): add edge case for empty pop
+#
+#   build     — Build system changes (Makefile, compiler flags, scripts)
+#               Example: build(makefile): add -fsanitize=address to debug target
+#
+#   ci        — CI/CD configuration changes (.github/workflows/, etc.)
+#               Example: ci: add valgrind step to test pipeline
+#
+#   chore     — Maintenance that does not affect source or tests
+#               Example: chore: add .DS_Store to .gitignore
+#
+#   revert    — Reverts a previous commit
+#               Example: revert: revert "feat(parser): add UTF-8 support"
+#
+# ─────────────────────────────────────────────────────────────────
+# SCOPE EXAMPLES (adjust to your project):
+#
+#   (parser)   (lexer)    (memory)   (utils)
+#   (stack)    (list)     (alloc)    (io)
+#   (makefile) (readme)   (tests)    (config)
+#
+# ─────────────────────────────────────────────────────────────────
+# SUBJECT LINE RULES:
+#
+#   ✓ Use imperative mood:  "add feature"  not  "added feature"
+#   ✓ Start after colon with lowercase:  "fix(x): handle null"
+#   ✓ No period at the end
+#   ✓ Maximum 72 characters
+#   ✓ Be specific: what does this commit do?
+#
+#   ✗ "fix bug"       — too vague
+#   ✗ "WIP"           — incomplete
+#   ✗ "update stuff"  — meaningless
+#   ✗ "asdfgh"        — please no
+#
+# ─────────────────────────────────────────────────────────────────
+# BODY RULES:
+#
+#   Write the body when the subject line is not enough to understand the change.
+#   Ask yourself:
+#     Why was this change necessary?
+#     What problem did it solve?
+#     What side effects does it have?
+#     What alternatives were considered?
+#
+#   Wrap at 72 characters.
+#   Use blank lines between paragraphs.
+#   Use "- " bullet points for lists.
+#
+# ─────────────────────────────────────────────────────────────────
+# BREAKING CHANGES:
+#
+#   Method 1 — add ! after type/scope:
+#     feat!: redesign the token API
+#     feat(parser)!: change return type of parse() from int to t_result
+#
+#   Method 2 — add footer:
+#     BREAKING CHANGE: parse() now returns t_result instead of int.
+#     Callers must update to check result.error instead of the return value.
+#
+#   Use both for clarity.
+#
+# ─────────────────────────────────────────────────────────────────
+# COMPLETE EXAMPLES:
+#
+#   ── Simple fix ────────────────────────────────────────────────
+#   fix(alloc): free temporary buffer before returning error
+#
+#   ── Feature with body ─────────────────────────────────────────
+#   feat(parser): add support for nested function calls
+#
+#   The previous parser only handled function calls at the top level.
+#   Nested calls like f(g(x)) would fail with a syntax error.
+#
+#   The fix adds a recursive descent step for argument expressions,
+#   allowing arbitrary nesting depth up to the stack limit.
+#
+#   ── Breaking change ───────────────────────────────────────────
+#   feat(token)!: replace char* with t_token struct in lexer API
+#
+#   The lexer previously returned raw char* pointers, which made it
+#   impossible to carry type information alongside the value.
+#
+#   BREAKING CHANGE: ft_lexer_next() now returns t_token* instead of char*.
+#   Callers must update to access token->value for the string content
+#   and token->type for the token classification.
+#
+# ═════════════════════════════════════════════════════════════════

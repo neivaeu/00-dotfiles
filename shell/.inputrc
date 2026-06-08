@@ -1,0 +1,169 @@
+# GNU Readline configuration.
+# Readline is the library that handles line editing in bash, python REPL,
+# and many other terminal programs.
+#
+# This file configures:
+#   - Tab completion behaviour
+#   - History search with arrow keys
+#   - Key bindings for navigation and editing
+#
+# WHEN CHANGES TAKE EFFECT:
+#   New shell sessions pick up changes automatically.
+#   To reload in the current session: bind -f ~/.inputrc
+#
+# ACTIVE vs COMMENTED:
+#   Only settings that improve daily usability without surprising behaviour
+#   are active. Everything else is commented with an explanation.
+
+# ─────────────────────────────────────────────────────────────────
+# EDITING MODE
+# ─────────────────────────────────────────────────────────────────
+
+# Use Emacs-style key bindings (the default for bash).
+# Emacs mode: Ctrl+A = start of line, Ctrl+E = end of line, Ctrl+K = cut to end, etc.
+# Alternative: set editing-mode vi  (vi modal editing — normal/insert mode)
+# Leave this as emacs unless you specifically want vi mode.
+set editing-mode emacs
+
+# ─────────────────────────────────────────────────────────────────
+# COMPLETION BEHAVIOUR
+# ─────────────────────────────────────────────────────────────────
+
+# Perform completion without regard to case.
+# Example: typing 'dow' Tab completes to 'Downloads' even if you typed lowercase.
+# ACTIVE: This is almost always what you want on a case-sensitive filesystem.
+set completion-ignore-case on
+
+# Treat hyphens (-) and underscores (_) as equivalent during completion.
+# Example: 'some-file' and 'some_file' both complete to the same result.
+# Uncomment if your projects mix hyphens and underscores in filenames.
+# set completion-map-case on
+
+# Show completions immediately on the first Tab press.
+# Without this: first Tab completes the common prefix, second Tab shows list.
+# With this: if there are multiple matches, list them on the first Tab.
+# ACTIVE: Saves one Tab press constantly.
+set show-all-if-ambiguous on
+
+# Show all completions even if the common prefix is empty (no shared prefix).
+# Works with show-all-if-ambiguous. Uncomment to be even more aggressive.
+# set show-all-if-unmodified on
+
+# Append a slash / to completed directories.
+# This makes it obvious that a completion result is a directory.
+# ACTIVE: No downside; the slash is useful visual feedback.
+set mark-directories on
+
+# Also append a slash to symbolic links that point to directories.
+# ACTIVE: Consistent with mark-directories.
+set mark-symlinked-directories on
+
+# Show file type indicators in the completion list (similar to ls -F).
+# Example: directories end with /, executables end with *.
+# ACTIVE: Makes the completion list much easier to scan.
+set visible-stats on
+
+# Colour completion entries by file type (uses the same colours as ls --color).
+# ACTIVE: Much easier to read a completion list with coloured entries.
+set colored-stats on
+
+# Colour the common prefix portion of completions.
+# When multiple completions share a prefix, that prefix is highlighted.
+# ACTIVE: Makes the shared prefix immediately obvious.
+set colored-completion-prefix on
+
+# Maximum number of completions to display without asking for confirmation.
+# Default is 100. Set to 0 to always show without asking.
+# 200 is a reasonable limit — more than that is usually noise.
+# set completion-query-items 200
+
+# ─────────────────────────────────────────────────────────────────
+# HISTORY SEARCH WITH ARROW KEYS
+# ─────────────────────────────────────────────────────────────────
+
+# Search history backwards/forwards using what is already typed as a prefix.
+# Example: type 'git' then press Up to cycle through all past 'git ...' commands.
+# Without this: Up/Down cycle through all history regardless of what you typed.
+# ACTIVE: This is one of the most useful readline features.
+#
+# \e[A = Up arrow    \e[B = Down arrow
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+
+# Page Up and Page Down also search history (alternative bindings).
+# \e[5~ = Page Up    \e[6~ = Page Down
+# Uncomment if you want Page Up/Down to search history.
+# "\e[5~": history-search-backward
+# "\e[6~": history-search-forward
+
+# ─────────────────────────────────────────────────────────────────
+# KEY BINDINGS — NAVIGATION
+# ─────────────────────────────────────────────────────────────────
+
+# Home key — move to the beginning of the line.
+# \e[H and \eOH are the two common sequences for the Home key.
+"\e[H":  beginning-of-line
+"\eOH":  beginning-of-line
+
+# End key — move to the end of the line.
+# \e[F and \eOF are the two common sequences for the End key.
+"\e[F":  end-of-line
+"\eOF":  end-of-line
+
+# Ctrl+Right — move forward one word.
+# \e[1;5C is the sequence most terminals send for Ctrl+Right.
+"\e[1;5C": forward-word
+
+# Ctrl+Left — move backward one word.
+# \e[1;5D is the sequence most terminals send for Ctrl+Left.
+"\e[1;5D": backward-word
+
+# Delete key — delete the character under the cursor (forward delete).
+# \e[3~ is the standard Delete key sequence.
+"\e[3~": delete-char
+
+# ─────────────────────────────────────────────────────────────────
+# KEY BINDINGS — EDITING
+# ─────────────────────────────────────────────────────────────────
+
+# Ctrl+Delete — delete the word in front of the cursor.
+# \e[3;5~ is Ctrl+Delete in many terminals.
+# Uncomment if your terminal sends this sequence.
+# "\e[3;5~": kill-word
+
+# Alt+Backspace — delete the word behind the cursor.
+# \e\C-h = Escape followed by Ctrl+H (which is Backspace in ASCII).
+# This is the standard Emacs binding for backward-kill-word.
+# Already works as Alt+Backspace in most terminals without this line.
+# Uncomment only if it does not work by default.
+# "\e\C-h": backward-kill-word
+
+# ─────────────────────────────────────────────────────────────────
+# DISPLAY
+# ─────────────────────────────────────────────────────────────────
+
+# Disable the terminal bell entirely.
+# The bell rings when there are no completions or you reach the end of history.
+# 'none': completely silent
+# 'visible': flash the screen instead of making noise (less annoying)
+# 'audible': default — makes a beep sound
+set bell-style none
+
+# Do not expand ~ to the full home directory path.
+# Without this: Tab after ~ would expand to /home/yourname which is ugly.
+# ACTIVE: ~ is cleaner and more portable in command lines.
+set expand-tilde off
+
+# ─────────────────────────────────────────────────────────────────
+# PROGRAM-SPECIFIC SETTINGS
+# ─────────────────────────────────────────────────────────────────
+
+# Settings inside $if blocks apply only to the named program.
+# $if bash ... $endif: only applies when readline is used by bash.
+
+$if bash
+    # Ctrl+L: clear the screen and redraw the current line.
+    # This is the default in bash, but explicitly defining it ensures
+    # it is not accidentally overridden by other bindings.
+    "\C-l": clear-screen
+$endif

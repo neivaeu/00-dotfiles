@@ -1,0 +1,338 @@
+{
+    // editors/vscode/settings.json
+    //
+    // VS Code user settings.
+    // Symlinked to: ~/.config/Code/User/settings.json
+    //
+    // PHILOSOPHY:
+    //   Every setting is explained.
+    //   Settings that are VS Code defaults are not repeated here unless
+    //   the default is surprising or we want to make it explicit.
+    //   Settings that require an extension are commented out.
+    //
+    // SECTIONS:
+    //   Editor — core editing behaviour
+    //   Font — typography
+    //   Display — visual appearance
+    //   Terminal — integrated terminal
+    //   Files — file handling
+    //   Git — version control integration
+    //   Per-language — language-specific overrides
+    //   Search — search and replace behaviour
+
+    // ─────────────────────────────────────────────────────────────
+    // EDITOR — CORE BEHAVIOUR
+    // ─────────────────────────────────────────────────────────────
+
+    // Tab size: 4 spaces by default. Overridden per language below.
+    "editor.tabSize": 4,
+
+    // Insert spaces when Tab is pressed.
+    // Overridden to false for C files (42 Norm requires hard tabs).
+    "editor.insertSpaces": true,
+
+    // Detect indentation style from the file content automatically.
+    // Set to false to always use the settings above.
+    // false: use tabSize and insertSpaces always, ignore file content.
+    // true:  override with whatever the file already uses.
+    "editor.detectIndentation": false,
+
+    // Show whitespace characters.
+    // "boundary": show spaces at the start and end of lines only.
+    // "all": show all whitespace characters (noisy but thorough).
+    // "trailing": show only trailing whitespace.
+    "editor.renderWhitespace": "boundary",
+
+    // Draw vertical rulers at these column positions.
+    // 80: 42 Norm maximum line length.
+    "editor.rulers": [80],
+
+    // Word wrap: off — horizontal scrolling is more predictable for code.
+    // Overridden to "on" for markdown files below.
+    "editor.wordWrap": "off",
+
+    // Line numbers: on (absolute).
+    // Options: "on" (absolute), "relative" (Vim-style), "interval", "off".
+    "editor.lineNumbers": "on",
+
+    // Highlight the line the cursor is on.
+    // "all": highlight both the line number and the line content.
+    "editor.renderLineHighlight": "all",
+
+    // Minimap: disabled. Takes horizontal space with little benefit for most files.
+    "editor.minimap.enabled": false,
+
+    // Smooth scrolling: reduces visual jumps when scrolling.
+    "editor.smoothScrolling": true,
+
+    // Cursor blinking animation.
+    "editor.cursorBlinking": "smooth",
+
+    // Format on save: apply the configured formatter when saving.
+    // Requires a formatter to be installed for each language.
+    // Commented because: formatters must be installed and configured per project.
+    // "editor.formatOnSave": true,
+
+    // Format on paste: normalise indentation when pasting.
+    // Commented because: it can reformat code you are intentionally pasting as-is.
+    // "editor.formatOnPaste": false,
+
+    // Trim trailing whitespace when saving a file.
+    // Active: trailing whitespace causes noisy diffs and is never intentional.
+    "files.trimTrailingWhitespace": true,
+
+    // Ensure files end with a newline (POSIX standard).
+    // Active: required for correct behaviour with many Unix tools.
+    "files.insertFinalNewline": true,
+
+    // Remove extra blank lines at the end of files.
+    "files.trimFinalNewlines": true,
+
+    // Auto save: off — save manually with Ctrl+S.
+    // "afterDelay": saves after inactivity (can save broken states).
+    // "off": manual save only.
+    "files.autoSave": "off",
+
+    // Accept suggestions with Enter.
+    // "on":    Enter accepts the highlighted suggestion.
+    // "smart": only accepts if the suggestion was explicitly triggered.
+    // "off":   Enter only confirms if you used the arrow keys to select.
+    // Commented because the right setting depends on personal preference.
+    // "editor.acceptSuggestionOnEnter": "smart",
+
+    // Show the suggestion list automatically as you type.
+    // Commented because: in C files this can be noisy without a language server.
+    // "editor.quickSuggestions": {
+    //     "other": true,
+    //     "comments": false,
+    //     "strings": false
+    // },
+
+    // Bracket pair colourisation — colour matching brackets with different colours.
+    // Built-in feature in VS Code 1.67+. No extension needed.
+    "editor.bracketPairColorization.enabled": true,
+
+    // Show bracket pair guides (vertical lines connecting matching brackets).
+    "editor.guides.bracketPairs": true,
+
+    // Do not scroll past the last line of the file.
+    "editor.scrollBeyondLastLine": false,
+
+    // Sticky scroll: show the current function/class context at the top.
+    // Useful for navigating large files.
+    "editor.stickyScroll.enabled": true,
+
+    // ─────────────────────────────────────────────────────────────
+    // FONT
+    // ─────────────────────────────────────────────────────────────
+
+    // Font family — fallback chain from best to most available.
+    // JetBrains Mono: excellent readability, free, designed for code.
+    // Fira Code:      ligatures, widely available.
+    // Cascadia Code:  Microsoft's open source coding font.
+    // monospace:      system fallback.
+    "editor.fontFamily": "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+
+    // Font size in pixels.
+    "editor.fontSize": 14,
+
+    // Line height multiplier — slightly above 1.0 for readability.
+    "editor.lineHeight": 1.6,
+
+    // Enable font ligatures (→ → →, !=, >=, <=, etc. rendered as single glyphs).
+    // Only has effect if the font supports ligatures.
+    "editor.fontLigatures": true,
+
+    // ─────────────────────────────────────────────────────────────
+    // DISPLAY
+    // ─────────────────────────────────────────────────────────────
+
+    // Colour theme.
+    // "Default Dark Modern" is VS Code's built-in dark theme — no extension needed.
+    "workbench.colorTheme": "Default Dark Modern",
+
+    // Do not open a welcome tab or release notes on startup.
+    "workbench.startupEditor": "none",
+
+    // Tree indent width in the file explorer.
+    "workbench.tree.indent": 16,
+
+    // Show tabs in the editor.
+    "workbench.editor.showTabs": "multiple",
+
+    // Do not open files in preview mode (single-click).
+    // Preview mode is useful but confusing — files open tentatively and
+    // are replaced by the next file you click.
+    "workbench.editor.enablePreview": false,
+
+    // Show breadcrumbs (file path and symbol location) above the editor.
+    "breadcrumbs.enabled": true,
+
+    // ─────────────────────────────────────────────────────────────
+    // TERMINAL
+    // ─────────────────────────────────────────────────────────────
+
+    // Default terminal shell.
+    // bash: always available on Linux. Change to "zsh" if you use zsh.
+    "terminal.integrated.defaultProfile.linux": "bash",
+
+    // Terminal font — matches the editor font for consistency.
+    "terminal.integrated.fontFamily": "monospace",
+    "terminal.integrated.fontSize": 13,
+
+    // Terminal scrollback buffer — how many lines to keep.
+    // 10000 is enough for most build output without consuming too much memory.
+    "terminal.integrated.scrollback": 10000,
+
+    // Terminal cursor style.
+    "terminal.integrated.cursorStyle": "block",
+
+    // ─────────────────────────────────────────────────────────────
+    // FILES
+    // ─────────────────────────────────────────────────────────────
+
+    // Associate file extensions with language modes.
+    // *.h files: VS Code defaults to "cpp" — force to "c" for 42 projects.
+    "files.associations": {
+        "*.h": "c",
+        "Makefile": "makefile",
+        "*.mk": "makefile"
+    },
+
+    // Exclude these from the file explorer.
+    // They still exist on disk — this only hides them in the VS Code UI.
+    "files.exclude": {
+        "**/*.o": true,
+        "**/*.a": true,
+        "**/a.out": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+
+    // Exclude from file watcher — reduces CPU usage on large projects.
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/obj/**": true,
+        "**/__pycache__/**": true
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // SEARCH
+    // ─────────────────────────────────────────────────────────────
+
+    // Exclude from search results — no point searching compiled output.
+    "search.exclude": {
+        "**/*.o": true,
+        "**/*.a": true,
+        "**/a.out": true,
+        "**/.git": true,
+        "**/tags": true,
+        "**/__pycache__": true
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // GIT
+    // ─────────────────────────────────────────────────────────────
+
+    // Require explicit staging before commit.
+    // When false: VS Code stages all changes automatically on commit.
+    // false is safer — you always know exactly what you are committing.
+    "git.enableSmartCommit": false,
+
+    // Fetch from remotes automatically in the background.
+    "git.autofetch": true,
+
+    // Fetch interval in seconds (3 minutes).
+    "git.autofetchPeriod": 180,
+
+    // Show git status decorations in the file explorer (M, U, etc.).
+    "git.decorations.enabled": true,
+
+    // Do not ask for confirmation before syncing (fetch + push).
+    "git.confirmSync": false,
+
+    // ─────────────────────────────────────────────────────────────
+    // PER-LANGUAGE OVERRIDES
+    // ─────────────────────────────────────────────────────────────
+
+    // C — 42 Norm requires hard tabs, 4 columns wide, 80 char limit.
+    "[c]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false,
+        "editor.rulers": [80]
+    },
+
+    // Makefile — tabs are mandatory (spaces break make).
+    "[makefile]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+    },
+
+    // Python — PEP 8: 4 spaces, 79 char line limit.
+    "[python]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [79]
+    },
+
+    // Markdown — wrap long lines, no ruler (it is prose, not code).
+    "[markdown]": {
+        "editor.wordWrap": "on",
+        "editor.rulers": [],
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "files.trimTrailingWhitespace": false
+        // NOTE: trimTrailingWhitespace is false for markdown.
+        // Two trailing spaces at the end of a line is intentional syntax
+        // for a hard line break (<br>). Trimming them changes the document.
+    },
+
+    // JSON — 2 spaces is the overwhelming convention.
+    "[json]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+
+    // YAML — 2 spaces required by the YAML specification.
+    "[yaml]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+
+    // Shell scripts — 4 spaces.
+    "[shellscript]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    // Git commit messages — wrap at 72 characters (git convention).
+    "[git-commit]": {
+        "editor.rulers": [50, 72],
+        "editor.wordWrap": "on"
+    },
+
+    // ─────────────────────────────────────────────────────────────
+    // EXPLORER
+    // ─────────────────────────────────────────────────────────────
+
+    // Confirm before deleting files.
+    "explorer.confirmDelete": true,
+
+    // Do not confirm drag-and-drop operations (less disruptive).
+    "explorer.confirmDragAndDrop": false,
+
+    // Sort files: directories first, then files.
+    "explorer.sortOrder": "type",
+
+    // ─────────────────────────────────────────────────────────────
+    // DIFF EDITOR
+    // ─────────────────────────────────────────────────────────────
+
+    // Show diffs side by side (not inline).
+    "diffEditor.renderSideBySide": true,
+
+    // Do NOT ignore whitespace in diffs.
+    // Whitespace changes (tabs → spaces, trailing spaces) should be visible.
+    "diffEditor.ignoreTrimWhitespace": false
+}
