@@ -1,16 +1,15 @@
-```markdown
 # dotfiles
 
-Personal development environment configuration for Linux.
+# Personal development environment configuration for Linux.
 
-Vanilla Vim. Bash. Zsh. Git. VS Code. No plugins required to get started.
-No external dependencies for the core configuration.
+# Vanilla Vim. Bash. Zsh. Git. VS Code. No plugins required to get started.
+# No external dependencies for the core configuration.
 
 ---
 
 ## Repository structure
 
-```text
+```markdown
 dotfiles/
 ├── .github/
 │   ├── workflows/
