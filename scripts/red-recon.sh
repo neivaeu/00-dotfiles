@@ -228,7 +228,7 @@ while IFS= read -r bin; do
         fi
         SUID_FOUND=1
     fi
-done < <(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /opt 2>/dev/null \
+done < <(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /opt \
          -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null)
 
 [[ $SUID_FOUND -eq 0 ]] && log_ok "Nenhum SUID/SGID anómalo encontrado."

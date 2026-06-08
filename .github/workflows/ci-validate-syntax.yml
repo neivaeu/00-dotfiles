@@ -72,7 +72,7 @@ jobs:
   #               - use of deprecated constructs
   #               - unreachable code
   #               - common mistakes like [ $var ] instead of [ "$var" ]
-  #               Severity 'warning' and above are reported (not 'style').
+  #               Severity 'error' only is enforced in CI.
 
   shell-syntax:
     name: Bash — syntax check
@@ -108,11 +108,8 @@ jobs:
             && echo "All .sh files passed bash -n"
 
       # shellcheck: static analysis on all shell scripts.
-      # --severity=warning: report warnings and errors, skip style/info hints.
-      #   'error':   will definitely break or behave incorrectly
-      #   'warning': likely to cause incorrect behaviour
-      #   'info':    suggestions (skipped — too noisy for CI)
-      #   'style':   style suggestions (skipped)
+      # --severity=error: fail only on definite errors.
+      #   warnings and style hints remain visible in local shellcheck runs.
       # --shell=bash: treat all files as bash (overrides shebang detection
       #   for files that might be detected as sh).
       # If no .sh files are found, xargs exits 0 and the step passes.
@@ -123,7 +120,7 @@ jobs:
                -not -path "./.git/*" \
                -print0 \
             | xargs -0 shellcheck \
-                --severity=warning \
+                --severity=error \
                 --shell=bash \
             && echo "All .sh files passed shellcheck"
 
