@@ -14,7 +14,6 @@
 #   Network   — local and external IP
 #   Toolchain — versions of installed development tools
 
-
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────
@@ -23,7 +22,6 @@ set -euo pipefail
 
 BOLD='\033[1m'
 CYAN='\033[0;36m'
-GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RESET='\033[0m'
 
@@ -95,7 +93,7 @@ fi
 section "Memory"
 if command -v free &>/dev/null; then
     MEM_TOTAL=$(free -h | awk '/^Mem:/ {print $2}')
-    MEM_USED=$(free -h | awk '/^Mem:/ {print $3}')
+    MEM_USED=$(free -h  | awk '/^Mem:/ {print $3}')
     MEM_AVAIL=$(free -h | awk '/^Mem:/ {print $7}')
     SWAP_TOTAL=$(free -h | awk '/^Swap:/ {print $2}')
     kv "Total"     "${MEM_TOTAL}"
@@ -119,12 +117,15 @@ df -h --output=target,size,used,avail,pcent 2>/dev/null | \
 # ─────────────────────────────────────────────────────────────────
 
 section "Network"
-# Local IP addresses (IPv4 only, exclude loopback)
-LOCAL_IPS=$(ip -4 addr show 2>/dev/null | grep inet | grep -v "127.0.0.1" | awk '{print $2}' | tr '\n' ' ' || echo "unavailable")
-kv "Local IP" "${LOCAL_IPS}"
+LOCAL_IPS=$(ip -4 addr show 2>/dev/null \
+    | grep inet \
+    | grep -v "127.0.0.1" \
+    | awk '{print $2}' \
+    | tr '\n' ' ' || echo "unavailable")
+kv "Local IP"    "${LOCAL_IPS}"
 
-# External IP (with timeout to avoid hanging if offline)
-EXTERNAL_IP=$(curl -s --connect-timeout 3 https://ipinfo.io/ip 2>/dev/null || echo "unavailable")
+EXTERNAL_IP=$(curl -s --connect-timeout 3 https://ipinfo.io/ip 2>/dev/null \
+    || echo "unavailable")
 kv "External IP" "${EXTERNAL_IP}"
 
 # ─────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # =============================================================================
 # shadow-hunter.sh — Caça a Segredos, Credenciais e Dados Sensíveis (Defensivo)
 # Versão: 3.0 Elite

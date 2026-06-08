@@ -1,27 +1,33 @@
 #!/usr/bin/env bash
+
 # =============================================================================
-# red-recon.sh — Auditoria Completa de Segurança Local (Uso Pessoal/Defensivo)
-# Versão: 3.0 Elite
-# Objetivo: Identificar vetores de escalada de privilégios e misconfigurações
-#            no TEU PRÓPRIO sistema para que os possas corrigir.
-# Uso: sudo bash red-recon.sh | tee audit-$(hostname)-$(date +%F).log
+# red-recon.sh — Full Local Security Audit (Personal/Defensive Use)
+# Version: 3.0 Elite
+# Goal: Identify privilege escalation vectors and misconfigurations
+#       on YOUR OWN system so you can fix them.
+# Usage: sudo bash red-recon.sh | tee audit-$(hostname)-$(date +%F).log
 # =============================================================================
 
 set -uo pipefail
 
 # ─────────────────────────────────────────────────────────────────
-# CORES
+# COLOURS
 # ─────────────────────────────────────────────────────────────────
-BOLD='\033[1m'; CYAN='\033[0;36m'; RED='\033[0;31m'
-YELLOW='\033[1;33m'; GREEN='\033[0;32m'; MAGENTA='\033[0;35m'
-BLUE='\033[0;34m'; WHITE='\033[1;37m'; RESET='\033[0m'
+BOLD='\033[1m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
 
-SCORE=0          # Contador de achados críticos
-WARNINGS=0       # Contador de alertas médios
-REPORT=()        # Array de sumário final
+SCORE=0
+WARNINGS=0
+REPORT=()
 
-log_critical() { echo -e "  ${RED}${BOLD}[CRÍTICO]${RESET} $1"; ((SCORE++)); REPORT+=("CRÍTICO: $1"); }
-log_warn()     { echo -e "  ${YELLOW}[ALERTA]${RESET}  $1"; ((WARNINGS++)); REPORT+=("ALERTA: $1"); }
+log_critical() { echo -e "  ${RED}${BOLD}[CRITICAL]${RESET} $1"; ((SCORE++)); REPORT+=("CRITICAL: $1"); }
+log_warn()     { echo -e "  ${YELLOW}[WARNING]${RESET}  $1"; ((WARNINGS++)); REPORT+=("WARNING: $1"); }
 log_ok()       { echo -e "  ${GREEN}[OK]${RESET}      $1"; }
 log_info()     { echo -e "  ${CYAN}[INFO]${RESET}    $1"; }
 section()      { echo -e "\n${BLUE}${BOLD}══════════════════════════════════════════════════════${RESET}"; \
@@ -42,141 +48,130 @@ cat << 'EOF'
  ╚═╝  ╚═╝╚══════╝╚═════╝       ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝
 EOF
 echo -e "${RESET}"
-echo -e "${CYAN} Host: ${WHITE}${HOSTNAME}${RESET} | ${CYAN}Utilizador: ${WHITE}${CURRENT_USER}${RESET} | ${CYAN}Data: ${WHITE}${TIMESTAMP}${RESET}"
-echo -e "${YELLOW} AVISO: Esta ferramenta é para auditar o TUU PRÓPRIO sistema. Usa com responsabilidade.${RESET}\n"
+echo -e "${CYAN} Host: ${WHITE}${HOSTNAME}${RESET} | ${CYAN}User: ${WHITE}${CURRENT_USER}${RESET} | ${CYAN}Date: ${WHITE}${TIMESTAMP}${RESET}"
+echo -e "${YELLOW} WARNING: This tool is for auditing YOUR OWN system. Use responsibly.${RESET}\n"
 
-# Verificar se corre como root
 if [[ $EUID -ne 0 ]]; then
-    echo -e "${YELLOW}${BOLD}[!] A correr sem root. Algumas verificações serão limitadas. Recomendado: sudo bash $0${RESET}\n"
+    echo -e "${YELLOW}${BOLD}[!] Running without root. Some checks will be limited. Recommended: sudo bash $0${RESET}\n"
 fi
 
 # =============================================================================
-# SECÇÃO 1 — Sistema Operativo & Kernel
+# SECTION 1 — Operating System & Kernel
 # =============================================================================
-section "1. Sistema Operativo & Kernel"
+section "1. Operating System & Kernel"
 
 KERNEL=$(uname -r)
 ARCH=$(uname -m)
-OS_NAME=$(grep -oP '(?<=^NAME=).+' /etc/os-release 2>/dev/null | tr -d '"' || echo "Desconhecido")
+OS_NAME=$(grep -oP '(?<=^NAME=).+' /etc/os-release 2>/dev/null | tr -d '"' || echo "Unknown")
 OS_VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release 2>/dev/null | tr -d '"' || echo "?")
 
 log_info "Kernel: ${KERNEL} | Arch: ${ARCH}"
-log_info "SO: ${OS_NAME} ${OS_VERSION}"
+log_info "OS: ${OS_NAME} ${OS_VERSION}"
 log_info "Uptime: $(uptime -p 2>/dev/null || uptime)"
 
-# Verificar kernels antigos/vulneráveis
 KERNEL_MAJOR=$(echo "$KERNEL" | cut -d. -f1)
 KERNEL_MINOR=$(echo "$KERNEL" | cut -d. -f2)
 
 if [[ "$KERNEL_MAJOR" -lt 4 ]] || { [[ "$KERNEL_MAJOR" -eq 4 ]] && [[ "$KERNEL_MINOR" -lt 15 ]]; }; then
-    log_critical "Kernel ${KERNEL} é antigo. Vulnerável a DirtyCow, PTRACE, Spectre/Meltdown e outros."
+    log_critical "Kernel ${KERNEL} is old. Vulnerable to DirtyCow, PTRACE, Spectre/Meltdown and others."
 fi
 
-# CVEs conhecidos do kernel por versão
 declare -A KERNEL_CVES=(
     ["5.8"]="CVE-2021-3490 (eBPF OOB Write)"
     ["5.7"]="CVE-2021-22555 (Netfilter heap overflow)"
     ["4.4"]="CVE-2016-5195 (DirtyCow), CVE-2017-7308"
-    ["3."]="CVE-2016-5195 (DirtyCow), múltiplos PTR derefs"
+    ["3."]="CVE-2016-5195 (DirtyCow), multiple PTR derefs"
 )
 for ver in "${!KERNEL_CVES[@]}"; do
     if [[ "$KERNEL" == *"${ver}"* ]]; then
-        log_warn "Kernel ${KERNEL} possivelmente afetado por: ${KERNEL_CVES[$ver]}"
+        log_warn "Kernel ${KERNEL} possibly affected by: ${KERNEL_CVES[$ver]}"
     fi
 done
 
-# Verificar PTI (Meltdown mitigation)
 if [[ -f /sys/kernel/debug/x86/pti_enabled ]]; then
     PTI=$(cat /sys/kernel/debug/x86/pti_enabled 2>/dev/null || echo "?")
-    [[ "$PTI" == "1" ]] && log_ok "PTI (Meltdown mitigation) ativo." || log_warn "PTI desativado! Vulnerável a Meltdown."
+    [[ "$PTI" == "1" ]] && log_ok "PTI (Meltdown mitigation) active." || log_warn "PTI disabled! Vulnerable to Meltdown."
 fi
 
-# Verificar ASLR
 ASLR=$(cat /proc/sys/kernel/randomize_va_space 2>/dev/null || echo "?")
 case "$ASLR" in
-    2) log_ok "ASLR completo ativo (randomize_va_space=2)." ;;
-    1) log_warn "ASLR parcial (=1). Recomendado =2 em /etc/sysctl.conf." ;;
-    0) log_critical "ASLR DESATIVADO! Stack/heap previsíveis. Facilita exploits." ;;
-    *) log_info "ASLR: estado desconhecido." ;;
+    2) log_ok "Full ASLR active (randomize_va_space=2)." ;;
+    1) log_warn "Partial ASLR (=1). Recommended =2 in /etc/sysctl.conf." ;;
+    0) log_critical "ASLR DISABLED! Stack/heap are predictable. Facilitates exploits." ;;
+    *) log_info "ASLR: unknown state." ;;
 esac
 
-# Verificar dmesg restrito
-DMESG=$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || echo "?")
-[[ "$DMESG" == "1" ]] && log_ok "dmesg_restrict=1 (restrição ativa)." || log_warn "dmesg_restrict=0. Utilizadores não-root podem ler dmesg (vazamento de info do kernel)."
+DMESG_VAL=$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || echo "?")
+[[ "$DMESG_VAL" == "1" ]] && log_ok "dmesg_restrict=1 (restriction active)." \
+    || log_warn "dmesg_restrict=0. Non-root users can read dmesg (kernel info leak)."
 
-# Verificar kptr_restrict
 KPTR=$(cat /proc/sys/kernel/kptr_restrict 2>/dev/null || echo "?")
-[[ "$KPTR" -ge 1 ]] 2>/dev/null && log_ok "kptr_restrict=${KPTR} (ponteiros do kernel ocultos)." || log_warn "kptr_restrict=0. Endereços do kernel visíveis em /proc/kallsyms."
+if [[ "$KPTR" =~ ^[0-9]+$ ]] && [[ "$KPTR" -ge 1 ]]; then
+    log_ok "kptr_restrict=${KPTR} (kernel pointers hidden)."
+else
+    log_warn "kptr_restrict=0. Kernel addresses visible in /proc/kallsyms."
+fi
 
 # =============================================================================
-# SECÇÃO 2 — Utilizador, Grupos e Sudo
+# SECTION 2 — User, Groups and Sudo
 # =============================================================================
-section "2. Utilizador, Grupos e Configuração Sudo"
+section "2. User, Groups and Sudo Configuration"
 
-log_info "Identidade: $(id)"
+log_info "Identity: $(id)"
 log_info "Shell: ${SHELL}"
 
-# Grupos perigosos
 GROUPS_LIST=$(id -Gn)
 DANGER_GROUPS=("docker" "lxd" "lxc" "disk" "adm" "shadow" "wheel" "sudo" "video" "plugdev" "kvm" "libvirt" "vboxusers")
 for grp in "${DANGER_GROUPS[@]}"; do
     if echo "$GROUPS_LIST" | grep -qw "$grp"; then
         case "$grp" in
-            docker|lxd|lxc) log_critical "Membro do grupo '${grp}'! Escalada para root trivial via containers." ;;
-            disk)           log_critical "Membro do grupo 'disk'! Acesso direto a raw devices (/dev/sdX)." ;;
-            shadow)         log_critical "Membro do grupo 'shadow'! Podes ler /etc/shadow e fazer hash dumping." ;;
-            sudo|wheel)     log_warn    "Membro do grupo '${grp}'. Verifica entradas em /etc/sudoers." ;;
-            adm)            log_warn    "Membro do grupo 'adm'. Acesso a logs do sistema (/var/log)." ;;
-            *)              log_info    "Membro do grupo '${grp}'." ;;
+            docker|lxd|lxc) log_critical "Member of group '${grp}'! Trivial root escalation via containers." ;;
+            disk)            log_critical "Member of group 'disk'! Direct access to raw devices (/dev/sdX)." ;;
+            shadow)          log_critical "Member of group 'shadow'! Can read /etc/shadow and dump hashes." ;;
+            sudo|wheel)      log_warn    "Member of group '${grp}'. Check entries in /etc/sudoers." ;;
+            adm)             log_warn    "Member of group 'adm'. Access to system logs (/var/log)." ;;
+            *)               log_info    "Member of group '${grp}'." ;;
         esac
     fi
 done
 
-# Sudo sem password
-echo -e "\n  ${CYAN}${BOLD}[*] A testar regras sudo...${RESET}"
+echo -e "\n  ${CYAN}${BOLD}[*] Testing sudo rules...${RESET}"
 if command -v sudo &>/dev/null; then
-    # Versão
     SUDO_VER=$(sudo -V 2>/dev/null | grep "Sudo version" | awk '{print $3}')
-    log_info "Sudo versão: ${SUDO_VER}"
+    log_info "Sudo version: ${SUDO_VER}"
 
-    # CVE-2021-3156 Baron Samedit
     if echo "${SUDO_VER}" | grep -qE "^1\.(8\.|9\.[0-4]|9\.5p1)"; then
-        log_critical "CVE-2021-3156 (Baron Samedit): versão ${SUDO_VER} vulnerável! Buffer overflow → root."
+        log_critical "CVE-2021-3156 (Baron Samedit): version ${SUDO_VER} is vulnerable! Buffer overflow → root."
     fi
-    # CVE-2019-14287
     if echo "${SUDO_VER}" | grep -qE "^1\.(8\.[0-9]\.|8\.[12][0-9]\.)"; then
-        log_warn "CVE-2019-14287: sudo < 1.8.28 pode permitir execução como root com 'sudo -u#-1'."
+        log_warn "CVE-2019-14287: sudo < 1.8.28 may allow root execution with 'sudo -u#-1'."
     fi
-    # CVE-2023-22809 (sudoedit)
     if echo "${SUDO_VER}" | grep -qE "^1\.9\.(1[0-2]|[0-9])\."; then
-        log_warn "CVE-2023-22809 (sudoedit): versões 1.9.0-1.9.12 vulneráveis a escape de editor."
+        log_warn "CVE-2023-22809 (sudoedit): versions 1.9.0-1.9.12 vulnerable to editor escape."
     fi
 
     SUDO_L=$(sudo -ln 2>/dev/null || true)
     if echo "$SUDO_L" | grep -qi "NOPASSWD"; then
-        log_warn "Entradas NOPASSWD em sudo! Comandos executáveis sem password:"
+        log_warn "NOPASSWD entries in sudo! Commands executable without password:"
         echo "$SUDO_L" | grep -i "NOPASSWD" | awk '{print "    → " $0}'
     fi
     if echo "$SUDO_L" | grep -qE "\(ALL.*\).*ALL|NOPASSWD.*ALL"; then
-        log_critical "Sudo com permissão (ALL) ALL! Escalada para root imediata."
+        log_critical "Sudo with (ALL) ALL permission! Immediate root escalation."
     fi
-    # Verificar sudo com env_keep perigoso
     if sudo -ln 2>/dev/null | grep -q "env_keep"; then
-        log_warn "sudo env_keep configurado. Variáveis de ambiente podem ser preservadas (LD_PRELOAD, etc.)."
+        log_warn "sudo env_keep configured. Environment variables may be preserved (LD_PRELOAD, etc.)."
     fi
 fi
 
-# /etc/sudoers legível
 if [[ -r /etc/sudoers ]]; then
-    log_warn "/etc/sudoers é LEGÍVEL pelo utilizador atual."
-    # Procurar entradas perigosas
+    log_warn "/etc/sudoers is READABLE by current user."
     grep -vE "^#|^Defaults|^$" /etc/sudoers 2>/dev/null | grep -v "^%" | awk '{print "    > " $0}'
 fi
 
 # =============================================================================
-# SECÇÃO 3 — PATH Hijacking
+# SECTION 3 — PATH Hijacking
 # =============================================================================
-section "3. PATH Hijacking & Injeção de Binários"
+section "3. PATH Hijacking & Binary Injection"
 
 IFS=':' read -ra PATH_DIRS <<< "$PATH"
 PATH_VULN=0
@@ -184,35 +179,33 @@ for dir in "${PATH_DIRS[@]}"; do
     if [[ -d "$dir" ]]; then
         PERMS=$(stat -c "%a" "$dir" 2>/dev/null || echo "?")
         if [[ -w "$dir" ]]; then
-            log_critical "PATH dir WRITABLE: '${dir}' (perms: ${PERMS}) — podes injetar binários maliciosos!"
+            log_critical "PATH dir WRITABLE: '${dir}' (perms: ${PERMS}) — can inject malicious binaries!"
             PATH_VULN=1
         fi
-        # Verificar se é diretório relativo (perigosíssimo)
         if [[ "$dir" == "." ]] || [[ "$dir" == "" ]]; then
-            log_critical "PATH contém diretório relativo '${dir}'! Qualquer diretório de trabalho é pesquisado."
+            log_critical "PATH contains relative directory '${dir}'! Any working directory is searched."
             PATH_VULN=1
         fi
     else
-        log_info "PATH dir não existente: '${dir}' (pode ser criada e explorada)."
+        log_info "PATH dir does not exist: '${dir}' (could be created and exploited)."
     fi
 done
-[[ $PATH_VULN -eq 0 ]] && log_ok "Nenhum diretório writable ou relativo no \$PATH."
+[[ $PATH_VULN -eq 0 ]] && log_ok "No writable or relative directories in \$PATH."
 
-# Verificar PATH em sudoers (secure_path)
 if sudo -V 2>/dev/null | grep -q "secure_path"; then
-    log_ok "sudo usa secure_path (PATH isolado durante execução sudo)."
+    log_ok "sudo uses secure_path (PATH isolated during sudo execution)."
 else
-    log_warn "sudo pode não usar secure_path — PATH do utilizador pode ser herdado."
+    log_warn "sudo may not use secure_path — user PATH may be inherited."
 fi
 
 # =============================================================================
-# SECÇÃO 4 — SUID / SGID
+# SECTION 4 — SUID / SGID
 # =============================================================================
-section "4. Binários SUID / SGID"
+section "4. SUID / SGID Binaries"
 
 WHITELIST_SUID="ping|ping6|su|sudo|passwd|chsh|chfn|newgrp|mount|umount|pkexec|dbus-daemon-launch-helper|ssh-keysign|polkit-agent-helper-1|Xorg|at|crontab|wall|write|fusermount|fusermount3|unix_chkpwd|pam_timestamp_check|gpasswd|newuidmap|newgidmap|snap"
 
-GTFOBINS="nmap|vim|vi|find|bash|sh|more|less|nano|cp|mv|awk|python|python3|ruby|php|perl|tar|zip|unzip|wget|curl|nc|netcat|socat|tee|dd|scp|rsync|env|node|lua|ftp|tftp|ssh|as|ar|base32|base64|busybox|cat|chmod|chown|column|comm|cpio|csh|cut|date|diff|dmesg|docker|ed|emacs|expand|expect|file|fmt|fold|gawk|gcc|git|grep|head|install|ionice|jjs|journalctl|jq|kill|ld|ld.so|logsave|look|ltrace|make|mawk|minicom|msgattrib|msgcat|msgconv|msgfilter|msgmerge|msguniq|mv|mysql|nice|nl|nohup|od|openssl|pg|pico|pip|rpm|rpmquery|run-parts|rvim|sed|setarch|shuf|sort|sqlite3|ss|stdbuf|strace|tail|taskset|timeout|ul|unexpand|uniq|unshare|update-alternatives|uudecode|uuencode|valgrind|watch|xargs|xxd|xz|zip|zsh"
+GTFOBINS="nmap|vim|vi|find|bash|sh|more|less|nano|cp|mv|awk|python|python3|ruby|php|perl|tar|zip|unzip|wget|curl|nc|netcat|socat|tee|dd|scp|rsync|env|node|lua|ftp|tftp|ssh|as|ar|base32|base64|busybox|cat|chmod|chown|column|comm|cpio|csh|cut|date|diff|dmesg|docker|ed|emacs|expand|expect|file|fmt|fold|gawk|gcc|git|grep|head|install|ionice|jjs|journalctl|jq|kill|ld|logsave|look|ltrace|make|mawk|minicom|msgattrib|msgcat|msgconv|msgfilter|msgmerge|msguniq|mysql|nice|nl|nohup|od|openssl|pg|pico|pip|rpm|rpmquery|run-parts|rvim|sed|setarch|shuf|sort|sqlite3|ss|stdbuf|strace|tail|taskset|timeout|ul|unexpand|uniq|unshare|update-alternatives|uudecode|uuencode|valgrind|watch|xargs|xxd|xz|zip|zsh"
 
 echo ""
 SUID_FOUND=0
@@ -220,48 +213,47 @@ while IFS= read -r bin; do
     BASENAME=$(basename "$bin")
     if ! echo "$BASENAME" | grep -qE "^(${WHITELIST_SUID})$"; then
         if echo "$BASENAME" | grep -qE "^(${GTFOBINS})$"; then
-            log_critical "GTFOBins SUID: ${bin} → Escalada de privilégios documentada em gtfobins.github.io"
+            log_critical "GTFOBins SUID: ${bin} → Documented privilege escalation at gtfobins.github.io"
         else
             OWNER=$(stat -c "%U" "$bin" 2>/dev/null || echo "?")
             PERMS=$(stat -c "%a" "$bin" 2>/dev/null || echo "?")
-            log_warn "SUID/SGID suspeito: ${bin} (dono: ${OWNER}, perms: ${PERMS})"
+            log_warn "Suspicious SUID/SGID: ${bin} (owner: ${OWNER}, perms: ${PERMS})"
         fi
         SUID_FOUND=1
     fi
-done < <(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /opt 2>/dev/null \
+done < <(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /opt \
          -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null)
 
-[[ $SUID_FOUND -eq 0 ]] && log_ok "Nenhum SUID/SGID anómalo encontrado."
+[[ $SUID_FOUND -eq 0 ]] && log_ok "No anomalous SUID/SGID found."
 
 # =============================================================================
-# SECÇÃO 5 — Linux Capabilities
+# SECTION 5 — Linux Capabilities
 # =============================================================================
-section "5. Linux Capabilities (Vetor Furtivo)"
+section "5. Linux Capabilities (Stealthy Vector)"
 
 if command -v getcap &>/dev/null; then
     CAPS=$(getcap -r / 2>/dev/null | grep -v "^getcap:" || true)
     if [[ -n "$CAPS" ]]; then
         DANGER_CAPS="cap_setuid|cap_setgid|cap_dac_override|cap_dac_read_search|cap_sys_admin|cap_sys_ptrace|cap_net_admin|cap_net_raw|cap_sys_rawio|cap_sys_module|cap_chown|cap_fowner"
         while IFS= read -r line; do
-            BIN=$(echo "$line" | awk '{print $1}')
             CAP=$(echo "$line" | awk '{print $2}')
             if echo "$CAP" | grep -qE "${DANGER_CAPS}"; then
-                log_critical "Capability perigosa: ${line} → Possível escalada de privilégios."
+                log_critical "Dangerous capability: ${line} → Possible privilege escalation."
             else
                 log_warn "Capability: ${line}"
             fi
         done <<< "$CAPS"
     else
-        log_ok "Nenhuma capability anómala encontrada."
+        log_ok "No anomalous capabilities found."
     fi
 else
-    log_warn "'getcap' não instalado. Instala com: apt install libcap2-bin"
+    log_warn "'getcap' not installed. Install with: apt install libcap2-bin"
 fi
 
 # =============================================================================
-# SECÇÃO 6 — Cron Jobs (Sistema e Utilizador)
+# SECTION 6 — Cron Jobs
 # =============================================================================
-section "6. Cron Jobs & Tarefas Agendadas"
+section "6. Cron Jobs & Scheduled Tasks"
 
 CRON_LOCATIONS=(
     "/etc/crontab"
@@ -276,109 +268,105 @@ CRON_LOCATIONS=(
 
 for loc in "${CRON_LOCATIONS[@]}"; do
     if [[ -e "$loc" ]]; then
-        # Verificar writable
         if [[ -w "$loc" ]]; then
-            log_critical "Cron WRITABLE: ${loc} → podes injetar comandos a correr como root!"
+            log_critical "Cron WRITABLE: ${loc} → can inject commands to run as root!"
         fi
-        # Verificar scripts referenciados que são writable
         if [[ -f "$loc" ]]; then
             while IFS= read -r line; do
-                # Extrair caminhos de scripts da linha de cron
                 SCRIPT=$(echo "$line" | grep -oP '(/[^ ]+\.(sh|py|rb|pl|bash))' | head -1 || true)
                 if [[ -n "$SCRIPT" ]] && [[ -f "$SCRIPT" ]] && [[ -w "$SCRIPT" ]]; then
-                    log_critical "Script de cron WRITABLE: ${SCRIPT} (referenciado em ${loc})"
+                    log_critical "Writable cron script: ${SCRIPT} (referenced in ${loc})"
                 fi
-                # Verificar se usa caminhos relativos
-                if echo "$line" | grep -qE "^\s*[*0-9]" && echo "$line" | grep -qP "\s+[^/\s][^\s]*(\.sh|python|perl|ruby|bash|sh)\b"; then
-                    log_warn "Possível caminho relativo em cron: ${line}"
+                if echo "$line" | grep -qE "^\s*[*0-9]" && \
+                   echo "$line" | grep -qP "\s+[^/\s][^\s]*(\.sh|python|perl|ruby|bash|sh)\b"; then
+                    log_warn "Possible relative path in cron: ${line}"
                 fi
             done < <(grep -vE "^#|^$" "$loc" 2>/dev/null || true)
         fi
     fi
 done
 
-# systemd timers (equivalente moderno de cron)
-echo -e "\n  ${CYAN}[*] Verificando systemd timers...${RESET}"
+echo -e "\n  ${CYAN}[*] Checking systemd timers...${RESET}"
 if command -v systemctl &>/dev/null; then
     TIMERS=$(systemctl list-timers --all 2>/dev/null | grep -v "^0 timers" | head -20 || true)
     if [[ -n "$TIMERS" ]]; then
-        log_info "Timers systemd ativos (verifica os scripts associados):"
+        log_info "Active systemd timers (check associated scripts):"
         echo "$TIMERS" | head -10 | awk '{print "    " $0}'
     fi
 fi
 
 # =============================================================================
-# SECÇÃO 7 — Configuração SSH
+# SECTION 7 — SSH Configuration
 # =============================================================================
-section "7. Configuração SSH (sshd_config)"
+section "7. SSH Configuration (sshd_config)"
 
 SSHD_CONFIG="/etc/ssh/sshd_config"
 if [[ -f "$SSHD_CONFIG" ]]; then
     check_ssh() {
         local key="$1" good="$2" msg_bad="$3"
         local val
-        val=$(grep -iE "^${key}\s+" "$SSHD_CONFIG" 2>/dev/null | tail -1 | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
+        val=$(grep -iE "^${key}\s+" "$SSHD_CONFIG" 2>/dev/null \
+              | tail -1 | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
         if [[ -z "$val" ]]; then
-            log_info "${key}: não definido (usa default). Verifica man sshd_config."
+            log_info "${key}: not set (uses default). Check man sshd_config."
         elif [[ "$val" == "$good" ]]; then
             log_ok "${key}: ${val}"
         else
-            log_warn "${msg_bad} (atual: ${val})"
+            log_warn "${msg_bad} (current: ${val})"
         fi
     }
 
-    check_ssh "PermitRootLogin"      "no"        "PermitRootLogin não é 'no'! Login root via SSH possível."
-    check_ssh "PasswordAuthentication" "no"      "PasswordAuthentication ativo! Permite brute-force de passwords."
-    check_ssh "PermitEmptyPasswords"  "no"        "PermitEmptyPasswords ativo! Login sem password possível."
-    check_ssh "X11Forwarding"         "no"        "X11Forwarding ativo! Possível hijacking de sessão gráfica."
-    check_ssh "UsePAM"               "yes"        "UsePAM desativado. Reduz controlo de autenticação."
-    check_ssh "StrictModes"          "yes"        "StrictModes desativado! SSH não verifica permissões de ficheiros."
-    check_ssh "Protocol"             ""           "" # informativo apenas
+    check_ssh "PermitRootLogin"       "no"  "PermitRootLogin is not 'no'! Root login via SSH possible."
+    check_ssh "PasswordAuthentication" "no" "PasswordAuthentication enabled! Allows password brute-force."
+    check_ssh "PermitEmptyPasswords"  "no"  "PermitEmptyPasswords enabled! Login without password possible."
+    check_ssh "X11Forwarding"         "no"  "X11Forwarding enabled! Possible graphical session hijacking."
+    check_ssh "UsePAM"                "yes" "UsePAM disabled. Reduces authentication control."
+    check_ssh "StrictModes"           "yes" "StrictModes disabled! SSH does not check file permissions."
 
-    # Protocolo SSH1
     if grep -qiE "^Protocol\s+1" "$SSHD_CONFIG" 2>/dev/null; then
-        log_critical "SSH Protocol 1 ativo! Altamente vulnerável (MITM, etc.). Usa apenas Protocol 2."
+        log_critical "SSH Protocol 1 active! Highly vulnerable (MITM, etc.). Use Protocol 2 only."
     fi
 
-    # MaxAuthTries baixo?
     MAX_AUTH=$(grep -iE "^MaxAuthTries\s+" "$SSHD_CONFIG" 2>/dev/null | awk '{print $2}')
     if [[ -z "$MAX_AUTH" ]]; then
-        log_warn "MaxAuthTries não definido (default=6). Recomendado: MaxAuthTries 3."
+        log_warn "MaxAuthTries not set (default=6). Recommended: MaxAuthTries 3."
     elif [[ "$MAX_AUTH" -gt 4 ]]; then
-        log_warn "MaxAuthTries=${MAX_AUTH}. Recomendado ≤3 para dificultar brute-force."
+        log_warn "MaxAuthTries=${MAX_AUTH}. Recommended ≤3 to hinder brute-force."
     else
         log_ok "MaxAuthTries=${MAX_AUTH}."
     fi
 
-    # Port padrão?
     SSH_PORT=$(grep -iE "^Port\s+" "$SSHD_CONFIG" 2>/dev/null | awk '{print $2}' || echo "22")
-    [[ "$SSH_PORT" == "22" ]] && log_warn "SSH na porta padrão 22. Considera mudar para reduzir scan automatizado." || log_ok "SSH na porta não-padrão: ${SSH_PORT}."
+    [[ "$SSH_PORT" == "22" ]] \
+        && log_warn "SSH on default port 22. Consider changing to reduce automated scanning." \
+        || log_ok "SSH on non-default port: ${SSH_PORT}."
 
-    # Chaves de host fracas
     if grep -qiE "^HostKey.*ecdsa|^HostKey.*dsa" "$SSHD_CONFIG" 2>/dev/null; then
-        log_warn "Chaves ECDSA/DSA configuradas. Considera usar apenas Ed25519 e RSA ≥4096."
+        log_warn "ECDSA/DSA host keys configured. Consider using Ed25519 and RSA ≥4096 only."
     fi
 
-    # AllowUsers / AllowGroups definidos?
     if ! grep -qiE "^(AllowUsers|AllowGroups)\s+" "$SSHD_CONFIG" 2>/dev/null; then
-        log_warn "AllowUsers/AllowGroups não definidos. Qualquer utilizador do sistema pode tentar login SSH."
+        log_warn "AllowUsers/AllowGroups not set. Any system user can attempt SSH login."
     else
-        log_ok "AllowUsers/AllowGroups configurados (restrição de acesso ativa)."
+        log_ok "AllowUsers/AllowGroups configured (access restriction active)."
     fi
 else
-    log_info "sshd_config não encontrado (SSH possivelmente não instalado)."
+    log_info "sshd_config not found (SSH possibly not installed)."
 fi
 
-# Authorized keys com permissões erradas
 if [[ -f "$HOME/.ssh/authorized_keys" ]]; then
     AK_PERMS=$(stat -c "%a" "$HOME/.ssh/authorized_keys" 2>/dev/null)
-    [[ "$AK_PERMS" == "600" || "$AK_PERMS" == "644" ]] && log_ok "$HOME/.ssh/authorized_keys permissões OK (${AK_PERMS})." || log_warn "$HOME/.ssh/authorized_keys permissões ${AK_PERMS} (deveria ser 600)."
+    if [[ "$AK_PERMS" == "600" || "$AK_PERMS" == "644" ]]; then
+        log_ok "$HOME/.ssh/authorized_keys permissions OK (${AK_PERMS})."
+    else
+        log_warn "$HOME/.ssh/authorized_keys permissions ${AK_PERMS} (should be 600)."
+    fi
 fi
 
 # =============================================================================
-# SECÇÃO 8 — Ficheiros Críticos do Sistema
+# SECTION 8 — Critical System Files
 # =============================================================================
-section "8. Permissões em Ficheiros Críticos"
+section "8. Critical File Permissions"
 
 declare -A CRITICAL_FILES=(
     ["/etc/passwd"]="644"
@@ -402,74 +390,68 @@ for file in "${!CRITICAL_FILES[@]}"; do
         OWNER=$(stat -c "%U:%G" "$file" 2>/dev/null || echo "?")
 
         if [[ -w "$file" ]]; then
-            log_critical "${file} TEM PERMISSÃO DE ESCRITA pelo utilizador atual! (perms: ${ACTUAL}, dono: ${OWNER})"
+            log_critical "${file} IS WRITABLE by current user! (perms: ${ACTUAL}, owner: ${OWNER})"
         elif [[ "$ACTUAL" != "$EXPECTED" ]]; then
-            log_warn "${file}: permissões ${ACTUAL} (esperado: ${EXPECTED}, dono: ${OWNER})"
+            log_warn "${file}: permissions ${ACTUAL} (expected: ${EXPECTED}, owner: ${OWNER})"
         else
-            log_ok "${file}: permissões ${ACTUAL} OK."
+            log_ok "${file}: permissions ${ACTUAL} OK."
         fi
 
-        # Shadow legível por não-root
         if [[ "$file" == "/etc/shadow" ]] && [[ -r "$file" ]]; then
-            log_critical "/etc/shadow LEGÍVEL! Hash dumping possível → cracking offline com hashcat/john."
+            log_critical "/etc/shadow READABLE! Hash dumping possible → offline cracking with hashcat/john."
         fi
     fi
 done
 
-# World-writable em /etc e /usr
-echo -e "\n  ${CYAN}[*] A procurar ficheiros world-writable em locais críticos...${RESET}"
+echo -e "\n  ${CYAN}[*] Searching for world-writable files in critical locations...${RESET}"
 WW_FILES=$(find /etc /usr/bin /usr/sbin /bin /sbin -type f -perm -0002 2>/dev/null || true)
 if [[ -n "$WW_FILES" ]]; then
-    log_critical "Ficheiros world-writable encontrados:"
+    log_critical "World-writable files found:"
     echo "$WW_FILES" | awk '{print "    > " $0}'
 else
-    log_ok "Nenhum ficheiro world-writable em /etc, /bin, /sbin, /usr."
+    log_ok "No world-writable files in /etc, /bin, /sbin, /usr."
 fi
 
-# Sticky bit em /tmp?
 TMP_PERMS=$(stat -c "%a" /tmp 2>/dev/null || echo "?")
-[[ "$TMP_PERMS" == "1777" ]] && log_ok "/tmp tem sticky bit (1777)." || log_warn "/tmp permissões: ${TMP_PERMS} (esperado: 1777 com sticky bit)."
+[[ "$TMP_PERMS" == "1777" ]] && log_ok "/tmp has sticky bit (1777)." \
+    || log_warn "/tmp permissions: ${TMP_PERMS} (expected: 1777 with sticky bit)."
 
 # =============================================================================
-# SECÇÃO 9 — Sockets, Docker & NFS
+# SECTION 9 — Sockets, Docker & NFS
 # =============================================================================
-section "9. Sockets Expostos, Docker & NFS"
+section "9. Exposed Sockets, Docker & NFS"
 
-# Docker socket
 if [[ -S "/var/run/docker.sock" ]]; then
     if [[ -w "/var/run/docker.sock" ]]; then
-        log_critical "/var/run/docker.sock é WRITABLE! Escalada para root em 1 comando:
+        log_critical "/var/run/docker.sock is WRITABLE! Root escalation in 1 command:
     docker run -v /:/mnt --rm -it alpine chroot /mnt"
     else
-        log_warn "Docker socket presente mas protegido. Verifica quem está no grupo 'docker'."
+        log_warn "Docker socket present but protected. Check who is in the 'docker' group."
     fi
 fi
 
-# Podman socket
-if [[ -S "/run/podman/podman.sock" ]] || [[ -S "$XDG_RUNTIME_DIR/podman/podman.sock" ]]; then
-    log_warn "Podman socket detetado. Verifica permissões."
+if [[ -S "/run/podman/podman.sock" ]] || [[ -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock" ]]; then
+    log_warn "Podman socket detected. Check permissions."
 fi
 
-# NFS
 if [[ -f "/etc/exports" ]]; then
-    log_info "Configuração NFS encontrada em /etc/exports:"
+    log_info "NFS configuration found in /etc/exports:"
     while IFS= read -r line; do
         [[ "$line" =~ ^# ]] && continue
         [[ -z "$line" ]] && continue
         if echo "$line" | grep -q "no_root_squash"; then
-            log_critical "NFS no_root_squash: '${line}' → root remoto mantém privilégios de root."
+            log_critical "NFS no_root_squash: '${line}' → remote root retains root privileges."
         elif echo "$line" | grep -q "no_all_squash"; then
-            log_warn "NFS no_all_squash: '${line}' → UIDs remotos não são mapeados."
+            log_warn "NFS no_all_squash: '${line}' → remote UIDs are not mapped."
         elif echo "$line" | grep -q "rw"; then
-            log_warn "NFS share com escrita: '${line}'"
+            log_warn "NFS share with write access: '${line}'"
         else
             log_ok "NFS: ${line}"
         fi
     done < /etc/exports
 fi
 
-# Portas abertas (serviços expostos localmente)
-echo -e "\n  ${CYAN}[*] Portas em escuta localmente...${RESET}"
+echo -e "\n  ${CYAN}[*] Locally listening ports...${RESET}"
 if command -v ss &>/dev/null; then
     ss -tlnpu 2>/dev/null | tail -n +2 | awk '{print "    " $0}' | head -20
 elif command -v netstat &>/dev/null; then
@@ -477,301 +459,292 @@ elif command -v netstat &>/dev/null; then
 fi
 
 # =============================================================================
-# SECÇÃO 10 — Processos & Serviços
+# SECTION 10 — Processes & Services
 # =============================================================================
-section "10. Processos a Correr como Root & Serviços"
+section "10. Processes Running as Root & Services"
 
-echo -e "  ${CYAN}[*] Processos de root expostos à rede:${RESET}"
-ps aux 2>/dev/null | awk '$1=="root" && $11!="[" {print "    " $0}' | grep -vE "kthread|ksoftirq|migration|watchdog|cpuhp|idle|kworker" | head -20
+echo -e "  ${CYAN}[*] Root processes exposed to network:${RESET}"
+ps aux 2>/dev/null \
+    | awk '$1=="root" && $11!="[" {print "    " $0}' \
+    | grep -vE "kthread|ksoftirq|migration|watchdog|cpuhp|idle|kworker" \
+    | head -20
 
-# Serviços desnecessários
 RISKY_SERVICES=("telnet" "rsh" "rlogin" "ftp" "tftp" "rexec" "rcp" "finger" "talk" "ntalk" "inetd" "xinetd")
-echo -e "\n  ${CYAN}[*] A verificar serviços inseguros/legacy...${RESET}"
+echo -e "\n  ${CYAN}[*] Checking insecure/legacy services...${RESET}"
 for svc in "${RISKY_SERVICES[@]}"; do
     if systemctl is-active --quiet "$svc" 2>/dev/null; then
-        log_critical "Serviço inseguro ATIVO: ${svc}! Desativa com: systemctl disable --now ${svc}"
+        log_critical "Insecure service ACTIVE: ${svc}! Disable with: systemctl disable --now ${svc}"
     fi
     if command -v "$svc" &>/dev/null; then
-        log_warn "Binário inseguro instalado: ${svc} ($(which $svc))"
+        SVC_PATH=$(command -v "$svc")
+        log_warn "Insecure binary installed: ${svc} (${SVC_PATH})"
     fi
 done
 
 # =============================================================================
-# SECÇÃO 11 — Firewall & Rede
+# SECTION 11 — Firewall & Network
 # =============================================================================
-section "11. Firewall & Configuração de Rede"
+section "11. Firewall & Network Configuration"
 
-# iptables
 if command -v iptables &>/dev/null && [[ $EUID -eq 0 ]]; then
     RULES=$(iptables -L 2>/dev/null | grep -cE "ACCEPT|DROP|REJECT" || echo "0")
-    DEFAULT_INPUT=$(iptables -L INPUT 2>/dev/null | head -1 | grep -o "policy [A-Z]*" || echo "desconhecido")
-    log_info "iptables INPUT policy: ${DEFAULT_INPUT} (${RULES} regras totais)"
+    DEFAULT_INPUT=$(iptables -L INPUT 2>/dev/null | head -1 | grep -o "policy [A-Z]*" || echo "unknown")
+    log_info "iptables INPUT policy: ${DEFAULT_INPUT} (${RULES} total rules)"
     if echo "$DEFAULT_INPUT" | grep -q "ACCEPT"; then
-        log_warn "Política padrão INPUT=ACCEPT. Considera DROP por padrão com regras explícitas."
+        log_warn "Default INPUT policy=ACCEPT. Consider DROP by default with explicit rules."
     fi
 fi
 
-# nftables
 if command -v nft &>/dev/null && [[ $EUID -eq 0 ]]; then
     NFT_RULES=$(nft list ruleset 2>/dev/null | wc -l || echo "0")
-    log_info "nftables: ${NFT_RULES} linhas de regras."
+    log_info "nftables: ${NFT_RULES} lines of rules."
 fi
 
-# UFW
 if command -v ufw &>/dev/null; then
     UFW_STATUS=$(ufw status 2>/dev/null | head -1)
     if echo "$UFW_STATUS" | grep -qi "inactive"; then
-        log_warn "UFW está INATIVO. Firewall não está a filtrar tráfego."
+        log_warn "UFW is INACTIVE. Firewall is not filtering traffic."
     else
         log_ok "UFW: ${UFW_STATUS}"
     fi
 fi
 
-# Forwarding ativo?
 IPV4_FWD=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo "0")
-[[ "$IPV4_FWD" == "1" ]] && log_warn "IPv4 forwarding ativo. Máquina pode funcionar como router." || log_ok "IPv4 forwarding desativado."
+[[ "$IPV4_FWD" == "1" ]] \
+    && log_warn "IPv4 forwarding active. Machine may act as a router." \
+    || log_ok "IPv4 forwarding disabled."
 
-# IPv6 desativado?
 IPV6_DISABLED=$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || echo "0")
-[[ "$IPV6_DISABLED" == "0" ]] && log_info "IPv6 ativo. Verifica se as regras de firewall cobrem IPv6." || log_ok "IPv6 desativado."
+[[ "$IPV6_DISABLED" == "0" ]] \
+    && log_info "IPv6 active. Verify firewall rules cover IPv6." \
+    || log_ok "IPv6 disabled."
 
-# Interfaces de rede
-echo -e "\n  ${CYAN}[*] Interfaces de rede:${RESET}"
+echo -e "\n  ${CYAN}[*] Network interfaces:${RESET}"
 ip addr 2>/dev/null | grep -E "^[0-9]+:|inet " | awk '{print "    " $0}'
 
 # =============================================================================
-# SECÇÃO 12 — AppArmor / SELinux
+# SECTION 12 — AppArmor / SELinux
 # =============================================================================
-section "12. Controlo de Acesso Mandatório (AppArmor / SELinux)"
+section "12. Mandatory Access Control (AppArmor / SELinux)"
 
-# AppArmor
 if command -v aa-status &>/dev/null || [[ -d /sys/kernel/security/apparmor ]]; then
-    AA_STATUS=$(aa-status 2>/dev/null | head -5 || cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l)
-    log_ok "AppArmor presente."
+    log_ok "AppArmor present."
     if aa-status 2>/dev/null | grep -q "0 profiles are in complain mode" && \
        aa-status 2>/dev/null | grep -q "0 profiles are in enforce mode"; then
-        log_warn "AppArmor sem perfis ativos (em uso mas sem proteção efetiva)."
+        log_warn "AppArmor has no active profiles (loaded but no effective protection)."
     fi
-elif [[ -f /etc/apparmor.d ]]; then
-    log_warn "AppArmor instalado mas possivelmente inativo."
+elif [[ -d /etc/apparmor.d ]]; then
+    log_warn "AppArmor installed but possibly inactive."
 else
-    log_warn "AppArmor não encontrado. Considera ativar para confinamento de processos."
+    log_warn "AppArmor not found. Consider enabling for process confinement."
 fi
 
-# SELinux
 if command -v getenforce &>/dev/null; then
     SE_STATUS=$(getenforce 2>/dev/null)
     case "$SE_STATUS" in
-        Enforcing) log_ok "SELinux: Enforcing (proteção ativa)." ;;
-        Permissive) log_warn "SELinux: Permissive (logging mas sem bloqueio)." ;;
+        Enforcing)  log_ok "SELinux: Enforcing (active protection)." ;;
+        Permissive) log_warn "SELinux: Permissive (logging but no blocking)." ;;
         Disabled)   log_warn "SELinux: Disabled." ;;
     esac
 fi
 
 # =============================================================================
-# SECÇÃO 13 — Utilizadores, Contas & Passwords
+# SECTION 13 — Users, Accounts & Passwords
 # =============================================================================
-section "13. Utilizadores do Sistema & Políticas de Password"
+section "13. System Users & Password Policies"
 
-# Utilizadores com UID 0 além de root
-echo -e "  ${CYAN}[*] Contas com UID 0 (root equivalente):${RESET}"
+echo -e "  ${CYAN}[*] Accounts with UID 0 (root equivalent):${RESET}"
 UID0=$(awk -F: '$3==0 {print $1}' /etc/passwd 2>/dev/null)
 for u in $UID0; do
-    [[ "$u" == "root" ]] && log_ok "root: UID 0 (normal)." || log_critical "Utilizador '${u}' tem UID 0! Root equivalente não documentado."
+    [[ "$u" == "root" ]] \
+        && log_ok "root: UID 0 (normal)." \
+        || log_critical "User '${u}' has UID 0! Undocumented root equivalent."
 done
 
-# Contas sem password
-echo -e "\n  ${CYAN}[*] Contas com password vazia ou bloqueada:${RESET}"
+echo -e "\n  ${CYAN}[*] Accounts with empty or locked password:${RESET}"
 if [[ $EUID -eq 0 ]]; then
     while IFS=: read -r user pass rest; do
-        if [[ -z "$pass" || "$pass" == "" ]]; then
-            log_critical "Conta '${user}' sem password!"
+        if [[ -z "$pass" ]]; then
+            log_critical "Account '${user}' has no password!"
         fi
-    done < /etc/shadow 2>/dev/null
+    done < /etc/shadow
 else
-    log_info "(Requer root para verificar /etc/shadow)"
+    log_info "(Requires root to check /etc/shadow)"
 fi
 
-# Utilizadores com shell válida (potencialmente interativos)
-echo -e "\n  ${CYAN}[*] Contas com shell de login:${RESET}"
+echo -e "\n  ${CYAN}[*] Accounts with login shell:${RESET}"
 VALID_SHELLS=$(cat /etc/shells 2>/dev/null || echo "/bin/bash /bin/sh /bin/zsh /bin/fish")
-awk -F: '{print $1 ":" $7}' /etc/passwd 2>/dev/null | while IFS=: read -r user shell; do
+while IFS=: read -r user _ _ _ _ _ shell; do
     if echo "$VALID_SHELLS" | grep -qw "$shell" 2>/dev/null; then
         log_info "  ${user} → shell: ${shell}"
     fi
-done
+done < /etc/passwd
 
-# Política de passwords (PAM)
 if [[ -f /etc/pam.d/common-password ]]; then
     if grep -q "pam_pwquality\|pam_cracklib" /etc/pam.d/common-password 2>/dev/null; then
-        log_ok "Política de qualidade de passwords ativa (pam_pwquality/cracklib)."
+        log_ok "Password quality policy active (pam_pwquality/cracklib)."
     else
-        log_warn "Sem política de qualidade de passwords em /etc/pam.d/common-password."
+        log_warn "No password quality policy in /etc/pam.d/common-password."
     fi
 fi
 
 # =============================================================================
-# SECÇÃO 14 — Discos, Partições & Montagens
+# SECTION 14 — Disks, Partitions & Mounts
 # =============================================================================
-section "14. Montagens de Sistema de Ficheiros"
+section "14. Filesystem Mounts"
 
-echo -e "  ${CYAN}[*] Montagens atuais:${RESET}"
+echo -e "  ${CYAN}[*] Current mounts:${RESET}"
 mount 2>/dev/null | awk '{print "    " $0}' | head -20
 
-# /tmp montado com noexec?
 if mount 2>/dev/null | grep -qE "\s/tmp\s"; then
     if mount 2>/dev/null | grep -E "\s/tmp\s" | grep -q "noexec"; then
-        log_ok "/tmp montado com noexec."
+        log_ok "/tmp mounted with noexec."
     else
-        log_warn "/tmp não tem opção 'noexec'. Scripts podem ser executados diretamente em /tmp."
+        log_warn "/tmp does not have 'noexec'. Scripts can be executed directly from /tmp."
     fi
 fi
 
-# /home montado com noexec?
 if mount 2>/dev/null | grep -qE "\s/home\s"; then
     if ! mount 2>/dev/null | grep -E "\s/home\s" | grep -q "nosuid"; then
-        log_warn "/home não tem opção 'nosuid'. Binários SUID em /home podem ser explorados."
+        log_warn "/home does not have 'nosuid'. SUID binaries in /home can be exploited."
     fi
 fi
 
-# Dispositivos montados com exec que deveriam ser noexec
 for mnt in /tmp /dev/shm /run/shm; do
     if mount 2>/dev/null | grep -qE "\s${mnt}\s"; then
         if ! mount 2>/dev/null | grep -E "\s${mnt}\s" | grep -q "noexec"; then
-            log_warn "${mnt} não tem 'noexec'. Pode ser usado para executar payloads em memória."
+            log_warn "${mnt} does not have 'noexec'. Can be used to execute in-memory payloads."
         fi
     fi
 done
 
 # =============================================================================
-# SECÇÃO 15 — Logs e Auditoria
+# SECTION 15 — Logs and Auditing
 # =============================================================================
-section "15. Sistema de Logs & Auditoria"
+section "15. Logging & Audit System"
 
-# rsyslog/syslog
 if systemctl is-active --quiet rsyslog 2>/dev/null || systemctl is-active --quiet syslog 2>/dev/null; then
-    log_ok "syslog/rsyslog ativo."
+    log_ok "syslog/rsyslog active."
 else
-    log_warn "rsyslog não ativo. Logs do sistema podem não estar a ser guardados."
+    log_warn "rsyslog not active. System logs may not be saved."
 fi
 
-# auditd
 if command -v auditctl &>/dev/null; then
     AUDIT_STATUS=$(auditctl -s 2>/dev/null | grep "enabled" | awk '{print $2}')
-    [[ "$AUDIT_STATUS" == "1" ]] && log_ok "auditd ativo (kernel audit framework)." || log_warn "auditd instalado mas não ativo."
+    [[ "$AUDIT_STATUS" == "1" ]] \
+        && log_ok "auditd active (kernel audit framework)." \
+        || log_warn "auditd installed but not active."
 else
-    log_warn "auditd não instalado. Considera instalar para rastreio de ações privilegiadas."
+    log_warn "auditd not installed. Consider installing for privileged action tracking."
 fi
 
-# journald persistente?
 if [[ -d /var/log/journal ]]; then
-    log_ok "journald persistente ativo (logs em /var/log/journal)."
+    log_ok "Persistent journald active (logs in /var/log/journal)."
 else
-    log_warn "journald volátil (logs perdem-se no reboot). Adiciona Storage=persistent em /etc/systemd/journald.conf."
+    log_warn "Volatile journald (logs lost on reboot). Add Storage=persistent in /etc/systemd/journald.conf."
 fi
 
-# Logs de auth
 if [[ -f /var/log/auth.log ]] || [[ -f /var/log/secure ]]; then
-    FAIL_COUNT=$(grep -c "Failed password\|authentication failure" /var/log/auth.log /var/log/secure 2>/dev/null | awk -F: '{s+=$2} END {print s}' || echo "0")
-    [[ "$FAIL_COUNT" -gt 50 ]] && log_warn "Muitas falhas de autenticação recentes: ${FAIL_COUNT}. Possível brute-force." || log_ok "Falhas de autenticação recentes: ${FAIL_COUNT}."
+    FAIL_COUNT=$(grep -ch "Failed password\|authentication failure" \
+                 /var/log/auth.log /var/log/secure 2>/dev/null \
+                 | awk '{s+=$1} END {print s+0}')
+    [[ "$FAIL_COUNT" -gt 50 ]] \
+        && log_warn "Many recent authentication failures: ${FAIL_COUNT}. Possible brute-force." \
+        || log_ok "Recent authentication failures: ${FAIL_COUNT}."
 fi
 
-# fail2ban
 if command -v fail2ban-client &>/dev/null; then
     if fail2ban-client status 2>/dev/null | grep -q "Jail list"; then
-        log_ok "fail2ban ativo com jails configuradas."
+        log_ok "fail2ban active with configured jails."
     else
-        log_warn "fail2ban instalado mas sem jails ativas."
+        log_warn "fail2ban installed but no active jails."
     fi
 else
-    log_warn "fail2ban não instalado. Considera instalar para proteção contra brute-force."
+    log_warn "fail2ban not installed. Consider installing for brute-force protection."
 fi
 
 # =============================================================================
-# SECÇÃO 16 — Software Desatualizado
+# SECTION 16 — Outdated Software
 # =============================================================================
-section "16. Software Desatualizado & CVEs de Aplicações"
+section "16. Outdated Software & Application CVEs"
 
-# OpenSSL
 if command -v openssl &>/dev/null; then
     SSL_VER=$(openssl version 2>/dev/null | awk '{print $2}')
     log_info "OpenSSL: ${SSL_VER}"
     if echo "$SSL_VER" | grep -qE "^(1\.0\.|1\.0\.0|0\.)"; then
-        log_critical "OpenSSL ${SSL_VER} muito antigo! Vulnerável a HeartBleed (CVE-2014-0160) e outros."
+        log_critical "OpenSSL ${SSL_VER} is very old! Vulnerable to HeartBleed (CVE-2014-0160) and others."
     elif echo "$SSL_VER" | grep -qE "^3\.0\.[0-6]"; then
-        log_warn "OpenSSL ${SSL_VER}: verifica CVE-2022-3786/CVE-2022-3602 (buffer overflow em X.509)."
+        log_warn "OpenSSL ${SSL_VER}: check CVE-2022-3786/CVE-2022-3602 (X.509 buffer overflow)."
     fi
 fi
 
-# OpenSSH cliente
 if command -v ssh &>/dev/null; then
     SSH_VER=$(ssh -V 2>&1 | grep -oP 'OpenSSH_\S+' | head -1)
     log_info "OpenSSH: ${SSH_VER}"
 fi
 
-# Python
 if command -v python3 &>/dev/null; then
     PY_VER=$(python3 --version 2>/dev/null | awk '{print $2}')
     log_info "Python3: ${PY_VER}"
     PY_MAJOR=$(echo "$PY_VER" | cut -d. -f1)
     PY_MINOR=$(echo "$PY_VER" | cut -d. -f2)
     if [[ "$PY_MAJOR" -eq 3 ]] && [[ "$PY_MINOR" -lt 8 ]]; then
-        log_warn "Python ${PY_VER} chegou ao fim de vida (EOL). Sem patches de segurança."
+        log_warn "Python ${PY_VER} has reached end-of-life (EOL). No more security patches."
     fi
 fi
 
-# Verificar pacotes com atualizações pendentes
-echo -e "\n  ${CYAN}[*] Atualizações de segurança pendentes...${RESET}"
+echo -e "\n  ${CYAN}[*] Checking pending security updates...${RESET}"
 if command -v apt &>/dev/null; then
     SEC_UPDATES=$(apt list --upgradable 2>/dev/null | grep -c "security" || echo "0")
-    [[ "$SEC_UPDATES" -gt 0 ]] && log_warn "${SEC_UPDATES} atualizações de SEGURANÇA pendentes! Corre: apt upgrade" || log_ok "Sem atualizações de segurança pendentes (apt)."
+    [[ "$SEC_UPDATES" -gt 0 ]] \
+        && log_warn "${SEC_UPDATES} pending SECURITY updates! Run: apt upgrade" \
+        || log_ok "No pending security updates (apt)."
 elif command -v yum &>/dev/null; then
     SEC_UPDATES=$(yum check-update --security 2>/dev/null | grep -c "^[A-Za-z]" || echo "0")
-    [[ "$SEC_UPDATES" -gt 0 ]] && log_warn "${SEC_UPDATES} atualizações de segurança pendentes (yum)." || log_ok "Sem atualizações de segurança pendentes (yum)."
+    [[ "$SEC_UPDATES" -gt 0 ]] \
+        && log_warn "${SEC_UPDATES} pending security updates (yum)." \
+        || log_ok "No pending security updates (yum)."
 fi
 
 # =============================================================================
-# SECÇÃO 17 — LD_PRELOAD & Bibliotecas Dinâmicas
+# SECTION 17 — LD_PRELOAD & Dynamic Libraries
 # =============================================================================
-section "17. LD_PRELOAD, LD_LIBRARY_PATH & Injeção de Bibliotecas"
+section "17. LD_PRELOAD, LD_LIBRARY_PATH & Library Injection"
 
-# LD_PRELOAD definido?
 if [[ -n "${LD_PRELOAD:-}" ]]; then
-    log_critical "LD_PRELOAD definido: ${LD_PRELOAD} → Injeção de biblioteca ativa!"
+    log_critical "LD_PRELOAD set: ${LD_PRELOAD} → Active library injection!"
 fi
 if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
-    log_warn "LD_LIBRARY_PATH definido: ${LD_LIBRARY_PATH}"
+    log_warn "LD_LIBRARY_PATH set: ${LD_LIBRARY_PATH}"
 fi
 
-# /etc/ld.so.conf e diretórios writable
 if [[ -f /etc/ld.so.conf ]]; then
     while IFS= read -r line; do
         [[ "$line" =~ ^# ]] && continue
         [[ -z "$line" ]] && continue
         if [[ -d "$line" ]] && [[ -w "$line" ]]; then
-            log_critical "Diretório de biblioteca WRITABLE: ${line} (em /etc/ld.so.conf) → injeção de .so possível."
+            log_critical "WRITABLE library directory: ${line} (in /etc/ld.so.conf) → .so injection possible."
         fi
     done < /etc/ld.so.conf
 fi
 
-# /etc/ld.so.preload
 if [[ -f /etc/ld.so.preload ]]; then
-    log_warn "/etc/ld.so.preload existe:"
-    cat /etc/ld.so.preload | awk '{print "    > " $0}'
+    log_warn "/etc/ld.so.preload exists:"
+    awk '{print "    > " $0}' /etc/ld.so.preload
 fi
 
 # =============================================================================
-# SUMÁRIO FINAL
+# FINAL SUMMARY
 # =============================================================================
 echo -e "\n\n${RED}${BOLD}╔══════════════════════════════════════════════════════════════╗"
-echo -e "║              SUMÁRIO DA AUDITORIA DE SEGURANÇA              ║"
+echo -e "║                   SECURITY AUDIT SUMMARY                    ║"
 echo -e "╚══════════════════════════════════════════════════════════════╝${RESET}"
-echo -e "  ${RED}${BOLD}Críticos: ${SCORE}${RESET}    ${YELLOW}Alertas: ${WARNINGS}${RESET}"
+echo -e "  ${RED}${BOLD}Critical: ${SCORE}${RESET}    ${YELLOW}Warnings: ${WARNINGS}${RESET}"
 echo ""
 if [[ ${#REPORT[@]} -gt 0 ]]; then
-    echo -e "${BOLD}Achados principais:${RESET}"
+    echo -e "${BOLD}Key findings:${RESET}"
     for item in "${REPORT[@]}"; do
-        if [[ "$item" == CRÍTICO* ]]; then
+        if [[ "$item" == CRITICAL* ]]; then
             echo -e "  ${RED}• ${item}${RESET}"
         else
             echo -e "  ${YELLOW}• ${item}${RESET}"
@@ -779,5 +752,5 @@ if [[ ${#REPORT[@]} -gt 0 ]]; then
     done
 fi
 
-echo -e "\n${GREEN}${BOLD}Auditoria concluída. Resultados para correção imediata acima.${RESET}"
-echo -e "${CYAN}Guarda o output com: sudo bash red-recon.sh | tee audit-$(hostname)-$(date +%F).log${RESET}\n"
+echo -e "\n${GREEN}${BOLD}Audit complete. Address the findings above immediately.${RESET}"
+echo -e "${CYAN}Save output with: sudo bash red-recon.sh | tee audit-$(hostname)-$(date +%F).log${RESET}\n"
