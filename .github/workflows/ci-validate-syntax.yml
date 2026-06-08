@@ -336,6 +336,9 @@ jobs:
             "system/.curlrc"
             "system/.wgetrc"
             "system/.editorconfig"
+
+            #editors
+            "editors/vim/.vimrc"
           )
 
           errors=0
