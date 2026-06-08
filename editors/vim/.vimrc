@@ -280,9 +280,8 @@ set fileencoding=utf-8
 "           '+clipboard' = supported, '-clipboard' = not supported
 "
 " If +clipboard is not available, this silently does nothing.
-if has('clipboard')
-    set clipboard=unnamedplus
-endif
+" But sometimes it work without +clipboard"
+set clipboard=unnamedplus
 
 " ─────────────────────────────────────────────────────────────────
 " 7. SPLITS
