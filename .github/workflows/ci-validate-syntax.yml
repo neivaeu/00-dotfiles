@@ -312,7 +312,7 @@ jobs:
             # Bootstrap
             "bootstrap/install.sh"
             "bootstrap/symlinks.conf"
-            "bootstrap/packages.txt"
+            "bootstrap/packages-linux.txt"
 
             # Shell — bash
             "shell/.bashrc"
