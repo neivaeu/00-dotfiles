@@ -10,6 +10,7 @@
 # Set identity (required before first commit)
 git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
+git commit --amend --reset-author --no-edit
 
 # Set default editor
 git config --global core.editor vim
