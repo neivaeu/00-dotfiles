@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Display formatted system information.
 # Shows CPU, memory, disk, network, and development tool versions.
 #
@@ -12,7 +14,6 @@
 #   Network   — local and external IP
 #   Toolchain — versions of installed development tools
 
-#!/usr/bin/env bash
 
 set -euo pipefail
 

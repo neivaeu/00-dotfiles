@@ -372,7 +372,7 @@ fi
 # Authorized keys com permissões erradas
 if [[ -f "$HOME/.ssh/authorized_keys" ]]; then
     AK_PERMS=$(stat -c "%a" "$HOME/.ssh/authorized_keys" 2>/dev/null)
-    [[ "$AK_PERMS" == "600" || "$AK_PERMS" == "644" ]] && log_ok "~/.ssh/authorized_keys permissões OK (${AK_PERMS})." || log_warn "~/.ssh/authorized_keys permissões ${AK_PERMS} (deveria ser 600)."
+    [[ "$AK_PERMS" == "600" || "$AK_PERMS" == "644" ]] && log_ok "$HOME/.ssh/authorized_keys permissões OK (${AK_PERMS})." || log_warn "$HOME/.ssh/authorized_keys permissões ${AK_PERMS} (deveria ser 600)."
 fi
 
 # =============================================================================

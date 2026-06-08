@@ -57,7 +57,7 @@ section "1. Auditoria de Chaves SSH"
 SSH_DIR="$HOME/.ssh"
 if [[ -d "$SSH_DIR" ]]; then
     SSH_DIR_PERMS=$(stat -c "%a" "$SSH_DIR")
-    [[ "$SSH_DIR_PERMS" == "700" ]] && log_ok "~/.ssh dir permissões: ${SSH_DIR_PERMS} (correto)." || log_warn "~/.ssh dir permissões: ${SSH_DIR_PERMS} (deveria ser 700)."
+    [[ "$SSH_DIR_PERMS" == "700" ]] && log_ok "$HOME.ssh dir permissões: ${SSH_DIR_PERMS} (correto)." || log_warn "$HOME.ssh dir permissões: ${SSH_DIR_PERMS} (deveria ser 700)."
 
     # Verificar cada chave
     while IFS= read -r keyfile; do
@@ -104,7 +104,7 @@ if [[ -d "$SSH_DIR" ]]; then
         if head -1 "$SSH_DIR/known_hosts" 2>/dev/null | grep -q "^|1|"; then
             log_ok "known_hosts usa hashing (HashKnownHosts yes)."
         else
-            log_warn "known_hosts em plaintext. Considera HashKnownHosts yes em ~/.ssh/config."
+            log_warn "known_hosts em plaintext. Considera HashKnownHosts yes em $HOME.ssh/config."
         fi
     fi
 
@@ -122,7 +122,7 @@ if [[ -d "$SSH_DIR" ]]; then
         done < "$SSH_DIR/authorized_keys"
     fi
 else
-    log_info "Diretório ~/.ssh não encontrado."
+    log_info "Diretório $HOME.ssh não encontrado."
 fi
 
 # Verificar chaves SSH noutros locais
@@ -131,7 +131,7 @@ find /home /root /tmp /var /opt 2>/dev/null -type f \
     \( -name "id_rsa" -o -name "id_ed25519" -o -name "id_ecdsa" -o -name "id_dsa" -o -name "*.pem" -o -name "*.key" \) \
     ! -path "$HOME/.ssh/*" 2>/dev/null | while read -r f; do
     if file "$f" 2>/dev/null | grep -q "private key"; then
-        log_critical "Chave privada fora de ~/.ssh: ${f}"
+        log_critical "Chave privada fora de $HOME.ssh: ${f}"
     else
         log_warn "Ficheiro de chave suspeito: ${f}"
     fi
@@ -383,7 +383,7 @@ for pattern in "${DB_CONFIG_PATTERNS[@]}"; do
         if echo "$file" | grep -q "pgpass"; then
             FPERMS_DEC=$(stat -c "%a" "$file" 2>/dev/null || echo "?")
             [[ "$FPERMS_DEC" == "600" ]] && log_ok "${file}: permissões 600 (correto)." || log_warn "${file}: permissões ${FPERMS_DEC} (deveria ser 600)."
-            log_warn "~/.pgpass contém credenciais PostgreSQL em plaintext (comportamento esperado, mas protege o ficheiro)."
+            log_warn "$HOME.pgpass contém credenciais PostgreSQL em plaintext (comportamento esperado, mas protege o ficheiro)."
         fi
     done
 done
@@ -422,9 +422,9 @@ done
 
 # WireGuard
 echo -e "\n  ${CYAN}[*] A verificar configurações WireGuard...${RESET}"
-for wgdir in /etc/wireguard; do
-    [[ ! -d "$wgdir" ]] && continue
-    find "$wgdir" -name "*.conf" 2>/dev/null | while read -r f; do
+wgdir="/etc/wireguard"
+if [[ -d "$wgdir" ]]; then
+    while IFS= read -r f; do
         FPERMS=$(stat -c "%a" "$f" 2>/dev/null || echo "?")
         log_info "Ficheiro WireGuard: ${f} (perms: ${FPERMS})"
         if [[ "$FPERMS" != "600" ]]; then
@@ -434,8 +434,8 @@ for wgdir in /etc/wireguard; do
             PRIVKEY=$(grep "PrivateKey" "$f" | head -1 | awk '{print $3}')
             log_warn "${f}: chave privada presente: $(mask "$PRIVKEY")"
         fi
-    done
-done
+    done < <(find "$wgdir" -maxdepth 1 -name "*.conf" -type f 2>/dev/null)
+fi
 
 # NetworkManager Wi-Fi
 echo -e "\n  ${CYAN}[*] A verificar passwords Wi-Fi guardadas (NetworkManager)...${RESET}"
@@ -577,12 +577,12 @@ done
 # git credential store (credenciais em plaintext)
 if [[ -f "$HOME/.git-credentials" ]]; then
     GITCRED_COUNT=$(wc -l < "$HOME/.git-credentials" 2>/dev/null || echo "0")
-    log_critical "~/.git-credentials existe! ${GITCRED_COUNT} credencial(ais) em PLAINTEXT."
+    log_critical "$HOME.git-credentials existe! ${GITCRED_COUNT} credencial(ais) em PLAINTEXT."
     echo "  Considera: git config --global credential.helper store → substitui por libsecret/manager."
 fi
 
 if git config --global credential.helper 2>/dev/null | grep -q "^store$"; then
-    log_warn "git credential.helper=store. Credenciais são guardadas em plaintext em ~/.git-credentials."
+    log_warn "git credential.helper=store. Credenciais são guardadas em plaintext em $HOME.git-credentials."
 fi
 
 # =============================================================================
@@ -601,12 +601,12 @@ if command -v gpg &>/dev/null; then
     fi
     # trust db
     GPG_DIR_PERMS=$(stat -c "%a" "$HOME/.gnupg" 2>/dev/null || echo "?")
-    [[ "$GPG_DIR_PERMS" == "700" ]] && log_ok "~/.gnupg: permissões 700 OK." || log_warn "~/.gnupg: permissões ${GPG_DIR_PERMS} (deveria ser 700)."
+    [[ "$GPG_DIR_PERMS" == "700" ]] && log_ok "$HOME.gnupg: permissões 700 OK." || log_warn "$HOME.gnupg: permissões ${GPG_DIR_PERMS} (deveria ser 700)."
 fi
 
 # Password stores
 echo -e "\n  ${CYAN}[*] Password stores locais...${RESET}"
-[[ -d "$HOME/.password-store" ]] && log_ok "pass (password-store) encontrado em ~/.password-store. Encriptado com GPG."
+[[ -d "$HOME/.password-store" ]] && log_ok "pass (password-store) encontrado em $HOME.password-store. Encriptado com GPG."
 [[ -f "$HOME/.config/keepassxc/keepassxc.ini" ]] && log_ok "KeePassXC configurado."
 if find "$HOME" -maxdepth 3 -name "*.kdbx" 2>/dev/null | grep -q .; then
     log_ok "Base de dados KeePass (.kdbx) encontrada (encriptada)."

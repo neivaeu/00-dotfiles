@@ -243,7 +243,8 @@ create_symlink() {
         if [ "$FORCE" = true ]; then
             # Create a timestamped backup so data is never lost.
             # date +%Y%m%d_%H%M%S: format like 20240115_143022
-            local backup="${target}.backup.$(date +%Y%m%d_%H%M%S)"
+            local backup
+            backup="${target}.backup.$(date +%Y%m%d_%H%M%S)"
             mv "$target" "$backup"
             log_warn "Backed up: $target → $backup"
             COUNT_BACKED=$((COUNT_BACKED + 1))
