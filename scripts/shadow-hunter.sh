@@ -128,9 +128,9 @@ fi
 
 # Verificar chaves SSH noutros locais
 echo -e "\n  ${CYAN}[*] A procurar chaves privadas SSH noutros locais...${RESET}"
-find /home /root /tmp /var /opt 2>/dev/null -type f \
+find /home /root /tmp /var /opt -type f \
     \( -name "id_rsa" -o -name "id_ed25519" -o -name "id_ecdsa" -o -name "id_dsa" -o -name "*.pem" -o -name "*.key" \) \
-    ! -path "$HOME/.ssh/*" 2>/dev/null | while read -r f; do
+    ! -path "$HOME/.ssh/*" | while read -r f; do
     if file "$f" 2>/dev/null | grep -q "private key"; then
         log_critical "Chave privada fora de $HOME.ssh: ${f}"
     else
